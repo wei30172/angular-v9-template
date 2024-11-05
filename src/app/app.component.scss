@@ -1,0 +1,19 @@
+:host {
+  display: flex;
+}
+
+.content {
+  box-sizing: border-box;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  padding: 20px;
+
+  &.sidebar-open {
+    margin-left: 240px;
+    width: calc(100% - 240px);
+  }
+
+  &:not(.sidebar-open) {
+    margin-left: 0;
+    width: 100%;
+  }
+}

@@ -1,0 +1,30 @@
+<button class="menu-icon" *ngIf="!sidebarOpen" (click)="toggleSidebar()">
+  &#9776;
+</button>
+
+<div class="sidebar" [class.closed]="!sidebarOpen">
+  <button class="close-btn" (click)="toggleSidebar()">✖</button>
+
+  <h3>模擬問題</h3>
+  <ul>
+    <li>
+      <h4>障礙物生成與渲染</h4>
+      <ul>
+        <li><a routerLink="/konva-obstacle">Konva 測試</a></li>
+        <li><a routerLink="/obstacle-3d">3D渲染 測試</a></li>
+      </ul>
+    </li>
+    <li>
+      <h4>熱力圖渲染</h4>
+      <ul>
+        <li><a routerLink="/konva-heatmap">Konva +simpleheat 測試</a></li>
+      </ul>
+    </li>
+    <li>
+      <h4>PDF 生成</h4>
+      <ul>
+        <li><a routerLink="/pdf-test">PDF 測試</a></li>
+      </ul>
+    </li>
+  </ul>
+</div>

@@ -1,0 +1,10 @@
+<div class="pdf-test-container">
+  <h2>PDF Generation Performance Test</h2>
+  
+  <!-- Display loading spinner and status message -->
+  <div *ngIf="isLoading" class="loading-spinner"></div>
+  <p>{{ generationStatus }}</p>
+
+  <!-- Disable buttons while loading -->
+  <button (click)="generatePdf('jsPDF')" [disabled]="isLoading">Generate PDF with jsPDF</button>
+</div>

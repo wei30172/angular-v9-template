@@ -1,0 +1,46 @@
+<!-- Zoom Controls -->
+<app-zoom-controls 
+  (zoomIn)="zoomIn()" 
+  (zoomOut)="zoomOut()" 
+  (moveUp)="moveUp()" 
+  (moveLeft)="moveLeft()" 
+  (moveRight)="moveRight()" 
+  (moveDown)="moveDown()" 
+  (resetZoom)="resetZoom()" 
+  (toggleGrid)="toggleGrid()">
+</app-zoom-controls>
+
+<div class="canvas-container">
+  <!-- Delete Icon -->
+  <app-delete-icon 
+    *ngIf="showDeleteIcon" 
+    [deleteIconStyle]="deleteIconStyle" 
+    [obstacleId]="currentId" 
+    (deleteObstacle)="deleteObstacle($event)">
+  </app-delete-icon>
+
+  <!-- Konva Canvas -->
+  <div id="konvaCanvas"></div>
+
+  <!-- Tooltip Component -->
+  <app-tooltip></app-tooltip>
+  
+  <!-- Obstacle List -->
+  <app-obstacle-list 
+    [obstacleList]="obstacleList" 
+    (selectObstacle)="selectObstacle($event)"
+    (deleteObstacle)="deleteObstacle($event)">
+  </app-obstacle-list>
+</div>
+
+<!-- Popup Overlay Component -->
+<app-popup-overlay *ngIf="showPopup" (close)="closeEditForm()"></app-popup-overlay>
+
+<!-- Edit Form Component -->
+<app-edit-form
+  *ngIf="showPopup"
+  [formGroup]="obstacleForm"
+  (close)="closeEditForm()"
+  (submit)="submitEditForm()"
+  (reset)="cancelEditForm()"
+></app-edit-form>
