@@ -91,15 +91,8 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
       this.konvaEventService.clearAllObjectEvents();
     }
 
-    // Remove multiple keyboard shortcuts
-    this.keyboardEventService.removeShortcuts([
-      'arrowup',
-      'arrowdown',
-      'arrowleft',
-      'arrowright',
-      'ctrl+c',
-      'ctrl+v',
-    ]);
+    // Clear all keyboard shortcuts
+    this.keyboardEventService.clearAllShortcuts();
   }
 
   // Initialize canvas and layer

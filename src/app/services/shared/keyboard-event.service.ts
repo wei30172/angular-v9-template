@@ -22,6 +22,11 @@ export class KeyboardEventService {
     });
   }
 
+  // Clear all keyboard shortcuts
+  clearAllShortcuts() {
+    this.keyActionMap.clear();
+  }
+
   // Handles keydown events
   handleKeyDown(event: KeyboardEvent) {
     // Convert the key to lowercase
