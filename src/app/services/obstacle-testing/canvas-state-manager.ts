@@ -3,7 +3,6 @@ export enum CanvasState {
   Idle = 'Idle',          // No current action
   Drawing = 'Drawing',    // Currently drawing a rectangle
   Dragging = 'Dragging',  // Currently dragging an object
-  Selecting = 'Selecting' // Currently selecting an object
 }
 
 // Class to manage the current state of the canvas
@@ -34,10 +33,5 @@ export class CanvasStateManager {
   // Check if the canvas is currently in the 'Dragging' state
   isDragging(): boolean {
     return this.currentState === CanvasState.Dragging;
-  }
-
-  // Check if the canvas is currently in the 'Selecting' state
-  isSelecting(): boolean {
-    return this.currentState === CanvasState.Selecting;
   }
 }

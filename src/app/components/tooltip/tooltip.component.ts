@@ -1,5 +1,5 @@
 import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
-import { TooltipService } from 'src/app/services/obstacle-testing/tooltip.service';
+import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { Observable } from 'rxjs';
 
 @Component({

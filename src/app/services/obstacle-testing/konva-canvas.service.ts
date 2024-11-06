@@ -21,9 +21,6 @@ export class KonvaCanvasService {
   private transformer: Konva.Transformer | null = null;
   private gridVisible = false;
   
-  // Map to track objects and their events
-  private objectEventMap: Map<Konva.Node, Map<string, (event: Konva.KonvaEventObject<MouseEvent | TouchEvent | WheelEvent>) => void>> = new Map();
-
   // Default constants
   private readonly DEFAULT_GRID_SIZE = 20;
   private readonly DEFAULT_WIDTH = 640;
@@ -217,7 +214,7 @@ export class KonvaCanvasService {
   moveCanvas(directionX: number = 1, directionY: number = 1) {
     if (!this.stage) return;
 
-    // Apply PAN_OFFSET based on direction
+    // Apply PanOffset based on direction
     const offsetX = directionX * CanvasSettings.PanOffset;
     const offsetY = directionY * CanvasSettings.PanOffset;
 
@@ -252,45 +249,12 @@ export class KonvaCanvasService {
       this.heatmapLayer!.draw();
     };
   }
-
-  // Bind events to the object and track them
-  bindObjectEvents(
-    object: Konva.Node,
-    events: { [key: string]: (event: Konva.KonvaEventObject<MouseEvent | TouchEvent | WheelEvent>) => void }
-  ) {
-    const eventMap = new Map<string, (event: Konva.KonvaEventObject<MouseEvent | TouchEvent | WheelEvent>) => void>();
-    Object.keys(events).forEach(eventType => {
-      const handler = events[eventType];
-      object.on(eventType, handler); // Bind the event to the object
-      eventMap.set(eventType, handler); // Track the event
-    });
-    this.objectEventMap.set(object, eventMap); // Store the object and its event handlers in the map
-  }
-
-  // Remove all events from the object
-  unbindObjectEvents(object: Konva.Node) {
-    const eventMap = this.objectEventMap.get(object);
-    if (eventMap) {
-      eventMap.forEach((handler, eventType) => {
-        object.off(eventType, handler); // Unbind the event from the object
-      });
-      this.objectEventMap.delete(object); // Remove the object from the map
-    }
-  }
-
-  // Clear all events bound to objects on the stage
-  clearAllObjectEvents() {
-    this.objectEventMap.forEach((_, object) => {
-      this.unbindObjectEvents(object); // Unbind all events for each object
-    });
-  }
-
-  // Clear listeners and stage
-  clearService() {
+  
+  // Clear stage and layers
+  clearStageAndLayers() {
     if (this.stage) {
       // Remove all event listeners
       this.stage.off();
-      this.clearAllObjectEvents(); // Clear all custom events
       
       // Destroy all layers and destroy the stage
       this.stage.getLayers().forEach(layer => layer.destroy());

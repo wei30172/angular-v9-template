@@ -112,13 +112,13 @@ export class ObstacleGenerationService {
     return this.obstaclesSubject.getValue();
   }
 
-  // Adds a new obstacle to the list
+  // Add a new obstacle
   addObstacle(obstacle: Obstacle): void {
     const currentObstacles = this.obstaclesSubject.getValue();
     this.obstaclesSubject.next([...currentObstacles, obstacle]);
   }
 
-  // Updates an obstacle's properties
+  // Update an existing obstacle
   updateObstacle(id: number, updatedProps: Partial<Obstacle>): void {
     const obstacles = this.obstaclesSubject.getValue();
     const obstacleIndex = obstacles.findIndex(obstacle => obstacle.id === id);
@@ -128,14 +128,14 @@ export class ObstacleGenerationService {
     }
   }
 
-  // Removes an obstacle from the list
+  // Remove an obstacle
   removeObstacle(id: number): void {
     let obstacles = this.obstaclesSubject.getValue();
     obstacles = obstacles.filter(obstacle => obstacle.id !== id);
     this.obstaclesSubject.next([...obstacles]);
   }
 
-  // Clear current obstacles data
+  // Clear all obstacles
   clearObstacles(): void {
     this.obstaclesSubject.next([]);
   }

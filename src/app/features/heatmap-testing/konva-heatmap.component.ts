@@ -5,7 +5,8 @@ import Konva from 'konva';
 
 import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
-import { TooltipService } from 'src/app/services/obstacle-testing/tooltip.service';
+import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
+import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { HeatmapDataService } from 'src/app/services/heatmap-testing/heatmap-data.service';
 import { SimpleheatService } from 'src/app/services/heatmap-testing/simpleheat.service';
 import { Obstacle } from 'src/app/features/obstacle-testing/obstacle.model';
@@ -32,6 +33,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
   constructor(
     private obstacleService: ObstacleGenerationService,
     private konvaCanvasService: KonvaCanvasService,
+    private konvaEventService: KonvaEventService,
     private tooltipService: TooltipService,
     private heatmapDataService: HeatmapDataService,
     private simpleheatService: SimpleheatService
@@ -55,7 +57,8 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
 
     if (this.stage) {
-      this.konvaCanvasService.clearService();
+      this.konvaCanvasService.clearStageAndLayers();
+      this.konvaEventService.clearAllObjectEvents();
     }
   }
 
@@ -169,7 +172,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
 
   // Function to add event listeners to a rectangle
   private addRectangleEventListeners(rect: Konva.Rect, obstacleId: number) {
-    this.konvaCanvasService.bindObjectEvents(rect, {
+    this.konvaEventService.bindObjectEvents(rect, {
       'mouseover': () => this.handleRectangleMouseOver(rect),
       'mouseout': () => this.handleRectangleMouseOut(rect),
     });

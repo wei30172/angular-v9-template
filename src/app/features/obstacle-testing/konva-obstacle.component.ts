@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged, debounceTime } from 'rxjs/operators';
@@ -8,8 +8,15 @@ import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obs
 import { ObstacleFormService } from 'src/app/services/obstacle-testing//obstacle-form.service';
 import { CanvasState, CanvasStateManager } from 'src/app/services/obstacle-testing/canvas-state-manager';
 import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
-import { TooltipService } from 'src/app/services/obstacle-testing/tooltip.service';
+import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
+import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
+import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { Obstacle } from './obstacle.model';
+
+enum ObstacleSettings {
+  MinDrag = 5,
+  MoveOffset = 10,
+}
 
 @Component({
   selector: 'app-konva-obstacle',
@@ -19,7 +26,6 @@ import { Obstacle } from './obstacle.model';
 export class KonvaObstacleComponent implements OnInit, OnDestroy {
   // Constants for canvas behavior
   private readonly OBSTACLE_COUNT = 20;
-  private readonly MIN_DRAG_DISTANCE = 5;
 
   obstacleList: Obstacle[] = [];
   obstacleForm: FormGroup;
@@ -32,7 +38,8 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   private obstacleLayer: Konva.Layer;
   private transformer: Konva.Transformer;
   private currentRect: Konva.Rect | null = null;
-  private originalValues: Obstacle | null = null;
+  private editingObstacle: Obstacle | null = null;
+  private copiedObstacle: Partial<Obstacle> | null = null;
   private startX: number | null = null;
   private startY: number | null = null;
   private obstacleMap: Map<number, Konva.Rect> = new Map();
@@ -43,6 +50,8 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     private obstacleService: ObstacleGenerationService,
     private obstacleFormService: ObstacleFormService,
     private konvaCanvasService: KonvaCanvasService,
+    private konvaEventService: KonvaEventService,
+    private keyboardEventService: KeyboardEventService,
     private tooltipService: TooltipService,
   ) {
     // Initialize the obstacle form
@@ -55,6 +64,20 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     this.bindCanvasEvents(); // Bind necessary canvas events
     this.subscribeToFormChanges(); // Subscribe to form changes
     this.subscribeToObstacles(); // Subscribe to obstacle data
+
+    // Register keyboard shortcuts with actions
+    this.keyboardEventService.registerShortcuts([
+      { keyCombo: 'arrowup', action: () => this.handleArrowKey(0, -1) },
+      { keyCombo: 'arrowdown', action: () => this.handleArrowKey(0, 1) },
+      { keyCombo: 'arrowleft', action: () => this.handleArrowKey(-1, 0) },
+      { keyCombo: 'arrowright', action: () => this.handleArrowKey(1, 0) },
+      { keyCombo: '+', action: () => this.handleScaleKey(1.1) },
+      { keyCombo: '-', action: () => this.handleScaleKey(1 / 1.1) },
+      { keyCombo: '=', action: () => this.handleScaleKey(1.1) },
+      { keyCombo: '_', action: () => this.handleScaleKey(1 / 1.1) },
+      { keyCombo: 'ctrl+c', action: () => this.copyCurrentObstacle() },
+      { keyCombo: 'ctrl+v', action: () => this.pasteObstacleWithOffset() },
+    ]);
   }
 
   ngOnDestroy() {
@@ -64,8 +87,19 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
 
     if (this.stage) {
-      this.konvaCanvasService.clearService();
+      this.konvaCanvasService.clearStageAndLayers();
+      this.konvaEventService.clearAllObjectEvents();
     }
+
+    // Remove multiple keyboard shortcuts
+    this.keyboardEventService.removeShortcuts([
+      'arrowup',
+      'arrowdown',
+      'arrowleft',
+      'arrowright',
+      'ctrl+c',
+      'ctrl+v',
+    ]);
   }
 
   // Initialize canvas and layer
@@ -75,7 +109,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     this.obstacleLayer = this.konvaCanvasService.getObstacleLayer();
     this.transformer = this.konvaCanvasService.getTransformer();
   }
-
+  
   // Load the background image for the canvas
   private loadBackgroundImage() {
     this.konvaCanvasService.loadBackgroundImage(
@@ -91,6 +125,179 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
       this.stage.width(),
       this.stage.height()
     );
+  }
+
+  // Listen for global keydown events
+  @HostListener('window:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    this.keyboardEventService.handleKeyDown(event);
+  }
+
+  // Handle arrow key presses to move either the obstacle or the canvas
+  private handleArrowKey(directionX: number, directionY: number) {
+    if (this.currentRect) {
+      // If an obstacle is selected, move the obstacle
+      this.moveObstacle(directionX, directionY);
+    } else {
+      // If no obstacle is selected, move the canvas
+      this.moveCanvas(directionX, directionY);
+    }
+  }
+
+  // Handle scale key presses to scale either the obstacle or the canvas
+  private handleScaleKey(factor: number) {
+    if (this.currentRect) {
+      // If an obstacle is selected, scale the obstacle
+      this.scaleObstacle(factor);
+    } else {
+      // If no obstacle is selected, adjust the zoom of the canvas
+      this.adjustZoom(factor);
+    }
+  }
+
+  // Move the obstacle by panning
+  private moveObstacle(directionX: number = 1, directionY: number = 1) {
+    this.tooltipService.hideTooltip();
+
+    // Calculate new x and y based on direction
+    const offsetX = directionX * ObstacleSettings.MoveOffset;
+    const offsetY = directionY * ObstacleSettings.MoveOffset;
+    const newX = this.currentRect.x() + offsetX;
+    const newY = this.currentRect.y() + offsetY;
+    
+    // Update the obstacle's position
+    this.currentRect.setAttrs({
+      x: newX,
+      y: newY,
+    });
+    
+    if (this.currentId === null) return;
+
+    // Update the obstacle data in the service
+    this.obstacleService.updateObstacle(this.currentId, {
+      x: newX,
+      y: newY,
+    });
+
+    if (this.showPopup) {
+      this.obstacleFormService.patchFormValue({
+        x: this.currentRect.x(),
+        y: this.currentRect.y(),
+        width: this.currentRect.width(),
+        height: this.currentRect.height(),
+        color: this.currentRect.fill() as string,
+      });
+    }
+
+    this.updateDeleteIconPosition(this.currentRect);
+    this.obstacleLayer.batchDraw();
+  }
+
+  // Adjust the obstacle scale
+  private scaleObstacle(factor: number) {
+    this.tooltipService.hideTooltip();
+
+    // Calculate new width and height based on factor
+    const newWidth = this.currentRect.width() * factor;
+    const newHeight = this.currentRect.height() * factor;
+
+    // Update the obstacle's size
+    this.currentRect.setAttrs({
+      width: newWidth,
+      height: newHeight,
+      scaleX: 1,
+      scaleY: 1,
+    })
+
+    if (this.currentId === null) return;
+    
+    // Update the obstacle data in the service
+    this.obstacleService.updateObstacle(this.currentId, {
+      width: newWidth,
+      height: newHeight,
+    });
+
+    if (this.showPopup) {
+      this.obstacleFormService.patchFormValue({
+        x: this.currentRect.x(),
+        y: this.currentRect.y(),
+        width: this.currentRect.width(),
+        height: this.currentRect.height(),
+        color: this.currentRect.fill() as string,
+      });
+    }
+
+    this.updateDeleteIconPosition(this.currentRect);
+    this.obstacleLayer.batchDraw();
+  }
+
+  // Copy selected obstacle data
+  private copyCurrentObstacle() {
+    if (this.showPopup) return
+    if (this.currentRect) {
+      this.copiedObstacle = {
+        x: this.currentRect.x(),
+        y: this.currentRect.y(),
+        width: this.currentRect.width(),
+        height: this.currentRect.height(),
+        color: this.currentRect.fill() as string,
+      };
+    }
+  }
+
+  // Paste a new obstacle with a predefined offset
+  private pasteObstacleWithOffset() {
+    if (this.showPopup) return
+    if (this.copiedObstacle) {
+      const { newX, newY } = this.calculateOffsetPosition();
+
+      const rect = new Konva.Rect({
+        x: newX,
+        y: newY,
+        width: this.copiedObstacle.width,
+        height: this.copiedObstacle.height,
+        fill: this.copiedObstacle.color,
+        draggable: true,
+      });
+     
+      // Assign new ID for the new obstacle
+      const newObstacleId = Date.now();
+
+      this.addRectangleEventListeners(rect, newObstacleId);
+
+      this.obstacleService.addObstacle({
+        id: newObstacleId,
+        x: rect.x(),
+        y: rect.y(),
+        width: rect.width(),
+        height: rect.height(),
+        color: rect!.fill() as string,
+      });
+
+      this.obstacleMap.set(newObstacleId, rect);
+      this.obstacleLayer.add(rect);
+      this.selectAndUpdateRect(rect);
+
+      // Update the position of copied obstacle
+      this.copiedObstacle.x = newX;
+      this.copiedObstacle.y = newY;
+    }
+  }
+
+  // Calculate the new position with an offset while ensuring it stays within boundaries
+  private calculateOffsetPosition() {
+    let newX = this.copiedObstacle.x + ObstacleSettings.MoveOffset;
+    let newY = this.copiedObstacle.y + ObstacleSettings.MoveOffset;
+
+    // Ensure obstacle remains within canvas boundaries
+    if (newX + this.copiedObstacle.width > this.stage.width()) {
+      newX = this.stage.width() - this.copiedObstacle.width;
+    }
+    if (newY + this.copiedObstacle.height > this.stage.height()) {
+      newY = this.stage.height() - this.copiedObstacle.height;
+    }
+
+    return { newX, newY };
   }
 
   // Bind the canvas interaction events
@@ -116,7 +323,6 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     this.currentId = this.getObstacleIdByRect(rect);
 
     this.updateDeleteIconPosition(rect);
-
     this.obstacleLayer.draw();
   }
   
@@ -148,7 +354,6 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Deselect transformer and hide the delete icon
   private handleDeselection() {
-    // console.log('Deselection triggered');
     this.hideDeleteIcon();
 
     this.transformer.nodes([]);
@@ -168,7 +373,6 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Handle mouse down event for starting rectangle drawing or dragging
   private handleMouseDown(event: Konva.KonvaEventObject<MouseEvent>) {
-    // console.log('MouseDown triggered');
     if (this.canvasStateManager.isDragging() || this.canvasStateManager.isDrawing()) return;
 
     if (event.target instanceof Konva.Rect) {
@@ -217,8 +421,8 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     if (
       !this.currentRect &&
       (
-        distanceX > this.MIN_DRAG_DISTANCE || 
-        distanceY > this.MIN_DRAG_DISTANCE
+        distanceX > ObstacleSettings.MinDrag || 
+        distanceY > ObstacleSettings.MinDrag
       )
     ) {
       this.createNewRectangle();
@@ -226,7 +430,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
     if (this.currentRect) {
       this.currentRect.size({ width: distanceX, height: distanceY });
-      this.obstacleLayer.batchDraw(); // Update canvas with new dimensions
+      this.obstacleLayer.batchDraw();
     }
   }
 
@@ -267,12 +471,11 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   
   // Finalize a new rectangle as an obstacle
   private finalizeNewObstacle() {
-    // Assign a unique ID for the new obstacle
+    // Assign new ID for the new obstacle
     const newObstacleId = Date.now();
 
     this.addRectangleEventListeners(this.currentRect, newObstacleId);
-
-    // Store the new obstacle in the map
+    
     this.obstacleService.addObstacle({
       id: newObstacleId,
       x: this.currentRect.x(),
@@ -313,7 +516,9 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   private updateRectangleFromForm(formValue: Obstacle) {
     this.updateRectangleProperties(this.currentRect, formValue);
 
-    // Updates the obstacle in the obstacle service
+    if (this.currentId === null) return;
+
+    // Update the obstacle data in the service
     this.obstacleService.updateObstacle(this.currentId, {
       x: this.currentRect.x(),
       y: this.currentRect.y(),
@@ -325,16 +530,17 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Set the rectangle properties
   private updateRectangleProperties(rect: Konva.Rect, values: Partial<Obstacle>) {
+    // != null => If value is not null or undefined, use it
     const updatedProperties = {
-      x: values.x !== undefined ? parseFloat(values.x.toString()) : rect.x(),
-      y: values.y !== undefined ? parseFloat(values.y.toString()) : rect.y(),
-      width: values.width !== undefined ? parseFloat(values.width.toString()) : rect.width(),
-      height: values.height !== undefined ? parseFloat(values.height.toString()) : rect.height(),
-      fill: values.color !== undefined ? values.color : rect.fill(),
+      x: values.x != null ? parseFloat(values.x.toString()) : rect.x(),
+      y: values.y != null ? parseFloat(values.y.toString()) : rect.y(),
+      width: values.width != null ? parseFloat(values.width.toString()) : rect.width(),
+      height: values.height != null ? parseFloat(values.height.toString()) : rect.height(),
+      fill: values.color != null ? values.color : rect.fill(),
     };
 
-    rect.setAttrs(updatedProperties); // Update all properties at once
-    this.obstacleLayer.draw(); // Re-draw the layer
+    rect.setAttrs(updatedProperties);
+    this.obstacleLayer.draw();
   }
 
   // Subscribe to obstacle updates from the service
@@ -398,7 +604,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Function to add event listeners to a rectangle
   private addRectangleEventListeners(rect: Konva.Rect, obstacleId: number) {
-    this.konvaCanvasService.bindObjectEvents(rect, {
+    this.konvaEventService.bindObjectEvents(rect, {
       'dragstart': () => this.handleRectangleDragStart(),
       'dragmove': () => this.handleRectangleDraging(rect, obstacleId),
       'dragend': () => this.handleRectangleDragEnd(rect),
@@ -412,10 +618,8 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Update position when rectangle is dragged
   private handleRectangleDragStart() {
-    // console.log('DragStart triggered');
     this.hideDeleteIcon();
     this.tooltipService.hideTooltip();
-
     this.canvasStateManager.setState(CanvasState.Dragging);
   }
 
@@ -429,31 +633,23 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Update position when rectangle is dragged
   private handleRectangleDragEnd(rect: Konva.Rect) {
-    // console.log('DragEnd triggered');
     this.canvasStateManager.setState(CanvasState.Idle);
 
     this.updateTooltip(
       { x: rect.x()!, y: rect.y()!, width: rect.width()!, height: rect.height()! },
     );
 
-    // Re-select the current rectangle and show the delete icon
     this.selectAndUpdateRect(rect);
   }
 
   // Enable transformer when rectangle is clicked
   private handleRectangleClick(rect: Konva.Rect) {
-    // console.log('RectangleClick triggered');
-    
-    // Deselect any previously selected object
     this.handleDeselection();
-    
-    // Select and update the delete icon position
-    this.selectAndUpdateRect(rect as Konva.Rect);
+    this.selectAndUpdateRect(rect);
   }
 
   // Update size after the transformation (resizing)
   private handleRectangleTransform(rect: Konva.Rect, obstacleId: number) {
-    // console.log('RectangleTransform triggered');
     const newAttrs = {
       x: rect.x(),
       y: rect.y(),
@@ -461,6 +657,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
       height: rect.height() * rect.scaleY(),
     };
 
+    // Update the obstacle's position and size
     rect.setAttrs({
       x: newAttrs.x,
       y: newAttrs.y,
@@ -470,46 +667,42 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
       scaleY: 1,
     });
 
+    // Update the obstacle data in the service
     this.obstacleService.updateObstacle(obstacleId, {
       x: newAttrs.x,
       y: newAttrs.y,
       width: newAttrs.width,
       height: newAttrs.height,
-      color: rect.fill() as string,
     });
 
     this.canvasStateManager.setState(CanvasState.Idle);
-    
-    // Re-select the current rectangle and show the delete icon
-    this.selectAndUpdateRect(rect);
+
+    this.updateDeleteIconPosition(rect);
+    this.obstacleLayer.draw();
   }
 
   // Mouse hovers over a rectangle, displaying the tooltip
   private handleRectangleMouseOver(rect: Konva.Rect) {
-    // Update target stroke style
+    // Update obstacle's stroke style
     rect.setAttrs({
       stroke: 'rgba(255, 255, 255, 0.8)',
       strokeWidth: 1,
     });
 
-    // Retrieve object position and dimensions
     const { x, y, width, height } = rect.getClientRect();
     const obstacleData = { x, y, width, height };
     this.updateTooltip(obstacleData);
-
-    // Render updated styles and tooltip
     this.obstacleLayer.batchDraw();
   }
 
   // Mouse leaves a Rectangle, hiding the tooltip
   private handleRectangleMouseOut(rect: Konva.Rect) {
-    // Reset stroke style
+    // Reset obstacle's style
     rect.setAttrs({
       stroke: null,
       strokeWidth: 0,
     });
 
-    // Hide tooltip and render changes
     this.tooltipService.hideTooltip();
     this.obstacleLayer.batchDraw();
   }
@@ -539,7 +732,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     this.currentId = obstacleId;
 
     // Save the original values to allow canceling edits
-    this.originalValues = {
+    this.editingObstacle = {
       id: obstacleId,
       x: rect.x(),
       y: rect.y(),
@@ -549,7 +742,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     };
 
     // Populate the form with the rectangle's current values
-    this.obstacleFormService.populateForm(this.originalValues);
+    this.obstacleFormService.populateForm(this.editingObstacle);
 
     // Show the popup form for editing
     this.showPopup = true;
@@ -563,26 +756,24 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   // Close the popup form
   closeEditForm() {
     this.showPopup = false;
-    this.currentRect = null;
-    this.currentId = null;
-    this.originalValues = null;
-
+    this.editingObstacle = null;
+    
     // Reset the form
     this.obstacleFormService.resetForm();
   }
 
   // Cancel the form and revert to original values
   cancelEditForm() {
-    if (this.currentRect && this.originalValues) {
-      this.updateRectangleProperties(this.currentRect, this.originalValues);
+    if (this.currentRect && this.editingObstacle) {
+      this.updateRectangleProperties(this.currentRect, this.editingObstacle);
 
       // Reset the form values to the original values
       this.obstacleFormService.patchFormValue({
-        x: this.originalValues.x,
-        y: this.originalValues.y,
-        width: this.originalValues.width,
-        height: this.originalValues.height,
-        color: this.originalValues.color,
+        x: this.editingObstacle.x,
+        y: this.editingObstacle.y,
+        width: this.editingObstacle.width,
+        height: this.editingObstacle.height,
+        color: this.editingObstacle.color,
       });
     }
   }
@@ -640,7 +831,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     this.konvaCanvasService.toggleGrid();
   }
 
-   // Select an obstacle from the list and set it as active on the canvas
+  // Select an obstacle from the list and set it as active on the canvas
   selectObstacle(obstacleId: number) {
     const rect = this.obstacleMap.get(obstacleId) || null;
     
@@ -649,8 +840,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Select and update the delete icon position
-    this.selectAndUpdateRect(rect as Konva.Rect);
+    this.selectAndUpdateRect(rect);
   }
 
   // Delete an obstacle from the canvas and the obstacle list
