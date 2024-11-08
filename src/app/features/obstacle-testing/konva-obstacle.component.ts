@@ -32,7 +32,8 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   isFormVisible = false;
   showDeleteIcon = false;
   deleteIconStyle = {};
-  
+  selectedShape: string = 'rectangle';
+
   private stage: Konva.Stage;
   private obstacleLayer: Konva.Layer;
   private transformer: Konva.Transformer;
@@ -825,5 +826,11 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     obstacle.destroy();
     this.deselectObstacle()
     this.obstacleService.removeObstacle(obstacleId);
+  }
+
+  // Set the selected shape
+  onShapeSelected(shape: string) {
+    this.selectedShape = shape;
+    this.notificationService.open(`Shape selected: ${shape}`);
   }
 }

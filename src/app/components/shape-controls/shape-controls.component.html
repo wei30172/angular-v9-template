@@ -1,0 +1,10 @@
+<div class="shape-controls">
+  <button
+    *ngFor="let shape of shapes"
+    class="shape-btn"
+    (click)="selectShape(shape.name)"
+    [ngClass]="{ selected: selectedShape === shape.name }"
+  >
+    {{ shape.symbol }}
+  </button>
+</div>

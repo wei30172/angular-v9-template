@@ -1,3 +1,9 @@
+<!-- Shape Controls -->
+<app-shape-controls
+  [selectedShape]="selectedShape"
+  (shapeSelected)="onShapeSelected($event)"
+></app-shape-controls>
+
 <!-- Zoom Controls -->
 <app-zoom-controls 
   (zoomIn)="zoomIn()" 
