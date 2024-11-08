@@ -70,23 +70,17 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.initializeCanvas(); // Initialize canvas and layer
     this.loadBackgroundImage(); // Load the background image
+
+    this.obstacleService.generateRandomObstacles( // Generate default obstacles
+      this.OBSTACLE_COUNT,
+      this.stage.width(),
+      this.stage.height()
+    );
+    
     this.bindCanvasEvents(); // Bind necessary canvas events
     this.subscribeToFormChanges(); // Subscribe to form changes
     this.subscribeToObstacles(); // Subscribe to obstacle data
-
-    // Register keyboard shortcuts with actions
-    this.keyboardEventService.registerShortcuts([
-      { keyCombo: 'arrowup', action: () => this.handleArrowKey(0, -1) },
-      { keyCombo: 'arrowdown', action: () => this.handleArrowKey(0, 1) },
-      { keyCombo: 'arrowleft', action: () => this.handleArrowKey(-1, 0) },
-      { keyCombo: 'arrowright', action: () => this.handleArrowKey(1, 0) },
-      { keyCombo: '+', action: () => this.handleScaleKey(1.1) },
-      { keyCombo: '-', action: () => this.handleScaleKey(1 / 1.1) },
-      { keyCombo: '=', action: () => this.handleScaleKey(1.1) },
-      { keyCombo: '_', action: () => this.handleScaleKey(1 / 1.1) },
-      { keyCombo: 'ctrl+c', action: () => this.copyCurrentObstacle() },
-      { keyCombo: 'ctrl+v', action: () => this.pasteObstacleWithOffset() },
-    ]);
+    this.registerKeyboardShortcuts(); // Register keyboard shortcuts with actions
   }
 
   ngOnDestroy() {
@@ -106,7 +100,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Initialize canvas and layer
   private initializeCanvas() {
-    this.konvaCanvasService.initializeStage('konvaCanvas');
+    this.konvaCanvasService.initializeStage('KonvaObstacleCanvas');
     this.stage = this.konvaCanvasService.getStage();
     this.obstacleLayer = this.konvaCanvasService.getObstacleLayer();
     this.transformer = this.konvaCanvasService.getTransformer();
@@ -115,17 +109,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   // Load the background image for the canvas
   private loadBackgroundImage() {
     this.konvaCanvasService.loadBackgroundImage(
-      'assets/images/floorplan.jpg',
-      this.onBackgroundImageLoaded
-    );
-  }
-
-  // Generate default obstacles
-  private onBackgroundImageLoaded = () => {
-    this.obstacleService.generateRandomObstacles(
-      this.OBSTACLE_COUNT,
-      this.stage.width(),
-      this.stage.height()
+      'assets/images/floorplan.jpg'
     );
   }
 
@@ -133,6 +117,22 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
     this.keyboardEventService.handleKeyDown(event);
+  }
+
+  // Register keyboard shortcuts with actions
+  private registerKeyboardShortcuts() {
+    this.keyboardEventService.registerShortcuts([
+      { keyCombo: 'arrowup', action: () => this.handleArrowKey(0, -1) },
+      { keyCombo: 'arrowdown', action: () => this.handleArrowKey(0, 1) },
+      { keyCombo: 'arrowleft', action: () => this.handleArrowKey(-1, 0) },
+      { keyCombo: 'arrowright', action: () => this.handleArrowKey(1, 0) },
+      { keyCombo: '+', action: () => this.handleScaleKey(1.1) },
+      { keyCombo: '-', action: () => this.handleScaleKey(1 / 1.1) },
+      { keyCombo: '=', action: () => this.handleScaleKey(1.1) },
+      { keyCombo: '_', action: () => this.handleScaleKey(1 / 1.1) },
+      { keyCombo: 'ctrl+c', action: () => this.copyCurrentObstacle() },
+      { keyCombo: 'ctrl+v', action: () => this.pasteObstacleWithOffset() },
+    ]);
   }
 
   // Handle arrow key presses to move either the obstacle or the canvas
@@ -536,13 +536,13 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   }
 
   // Render or update obstacles on the canvas based on the latest data
-  private renderObstacles(obstaclesDate: Obstacle[]) {
-    obstaclesDate.forEach(obstacleDate => {
-      const obstacle = this.findObstacleById(obstacleDate.id);
+  private renderObstacles(obstaclesData: Obstacle[]) {
+    obstaclesData.forEach(obstacleData => {
+      const obstacle = this.findObstacleById(obstacleData.id);
       if (obstacle) {
-        this.updateObstacle(obstacle, obstacleDate);
+        this.updateObstacle(obstacle, obstacleData);
       } else {
-        this.createObstacle(obstacleDate);
+        this.createObstacle(obstacleData);
       }
     });
     this.obstacleLayer.batchDraw();

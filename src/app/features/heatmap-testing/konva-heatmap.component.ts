@@ -41,6 +41,13 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.initializeCanvas(); // Initialize canvas and layer
     this.loadBackgroundImage(); // Load the background image
+
+    this.obstacleService.generateRandomObstacles( // Generate default obstacles
+      this.OBSTACLE_COUNT,
+      this.stage.width(),
+      this.stage.height()
+    );
+
     this.bindCanvasEvents(); // Bind necessary canvas events
     this.subscribeToObstacles(); // Subscribe to obstacle data
   }
@@ -63,7 +70,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
 
   // Initialize canvas and layer
   private initializeCanvas() {
-    this.konvaCanvasService.initializeStage('konvaCanvas');
+    this.konvaCanvasService.initializeStage('KonvaHeatmapCanvas');
     this.stage = this.konvaCanvasService.getStage();
     this.obstacleLayer = this.konvaCanvasService.getObstacleLayer();
   }
@@ -71,17 +78,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
   // Load the background image for the canvas
   private loadBackgroundImage() {
     this.konvaCanvasService.loadBackgroundImage(
-      'assets/images/floorplan.jpg',
-      this.onBackgroundImageLoaded
-    );
-  }
-
-  // Generate default obstacles
-  private onBackgroundImageLoaded = () => {
-    this.obstacleService.generateRandomObstacles(
-      this.OBSTACLE_COUNT,
-      this.stage.width(),
-      this.stage.height()
+      'assets/images/floorplan.jpg'
     );
   }
 
@@ -145,13 +142,13 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
   }
   
   // Render or update obstacles on the canvas based on the latest data
-  private renderObstacles(obstaclesDate: Obstacle[]) {
-    obstaclesDate.forEach(obstacleDate => {
-      const obstacle = this.findObstacleById(obstacleDate.id);
+  private renderObstacles(obstaclesData: Obstacle[]) {
+    obstaclesData.forEach(obstacleData => {
+      const obstacle = this.findObstacleById(obstacleData.id);
       if (obstacle) {
-        this.updateObstacle(obstacle, obstacleDate);
+        this.updateObstacle(obstacle, obstacleData);
       } else {
-        this.createObstacle(obstacleDate);
+        this.createObstacle(obstacleData);
       }
     });
     this.obstacleLayer.batchDraw();
@@ -167,7 +164,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
       fill: obstacle.color,
       draggable: true,
     });
-
+    
     newObstacle.setAttr('id', obstacle.id);
     this.obstacleLayer.add(newObstacle);
     this.addObstacleEventListeners(newObstacle);

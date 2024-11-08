@@ -11,13 +11,13 @@
   align-items: flex-start;
   gap: 8px;
   
-  #konvaCanvas, #simpleHeatCanvas {
+  #KonvaHeatmapCanvas, #KonvaObstacleCanvas, #simpleHeatCanvas {
     border: 1px solid black;
     width: 640px;
     height: 640px;
   }
 
-  #konvaCanvas {
+  #KonvaHeatmapCanvas, #KonvaObstacleCanvas {
     display: block;
   }
 }
