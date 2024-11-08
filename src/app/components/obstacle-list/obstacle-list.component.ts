@@ -8,14 +8,14 @@ import { Obstacle } from 'src/app/features/obstacle-testing/obstacle.model';
 })
 export class ObstacleListComponent {
   @Input() obstacleList: Obstacle[] = [];
-  @Output() selectObstacle = new EventEmitter<number>();
-  @Output() deleteObstacle = new EventEmitter<number>();
+  @Output() selectObstacle = new EventEmitter<string>();
+  @Output() deleteObstacle = new EventEmitter<string>();
 
-  onSelectObstacle(id: number) {
+  onSelectObstacle(id: string) {
     this.selectObstacle.emit(id);
   }
 
-  onDeleteObstacle(id: number) {
+  onDeleteObstacle(id: string) {
     this.deleteObstacle.emit(id);
   }
 }

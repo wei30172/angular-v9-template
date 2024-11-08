@@ -6,6 +6,10 @@ import { BehaviorSubject } from 'rxjs';
   providedIn: 'root'
 })
 export class ObstacleGenerationService {
+  // Use a Map to store obstacles by their IDs
+  private obstacleMap = new Map<string, Obstacle>();
+
+  // Observable for external components to access obstacle list
   private obstaclesSubject = new BehaviorSubject<Obstacle[]>([]);
   public obstacles$ = this.obstaclesSubject.asObservable();
   
@@ -13,31 +17,37 @@ export class ObstacleGenerationService {
   private readonly MIN_OBSTACLE_SIZE = 20; // Minimum obstacle size
   private readonly GRID_SIZE = this.MAX_OBSTACLE_SIZE; // Grid size based on max obstacle size
 
-  // Generates random obstacles with specified count and canvas boundaries
+  // Update the obstaclesSubject to emit the current obstacle list as an array
+  private updateObstaclesSubject() {
+    this.obstaclesSubject.next(Array.from(this.obstacleMap.values()));
+  }
+
+  // Generate random obstacles with specified count and canvas boundaries
   generateRandomObstacles(count: number, canvasWidth: number, canvasHeight: number): void {
+    this.obstacleMap.clear(); // Clear existing obstacles
+
     if (count <= 0 || canvasWidth <= 0 || canvasHeight <= 0) {
       console.warn('Invalid parameters for obstacle generation');
       return;
     }
-
-    const obstacles: Obstacle[] = [];
+    
     const gridMap: Map<string, Obstacle[]> = new Map();  // Map for grid-based placement
 
-    while (obstacles.length < count) {
+    while (this.obstacleMap.size < count) {
       // Generate random dimensions within specified range (between MIN_OBSTACLE_SIZE and MAX_OBSTACLE_SIZE)
       const randomWidth = Math.random() * (this.MAX_OBSTACLE_SIZE - this.MIN_OBSTACLE_SIZE) + this.MIN_OBSTACLE_SIZE;
       const randomHeight = Math.random() * (this.MAX_OBSTACLE_SIZE - this.MIN_OBSTACLE_SIZE) + this.MIN_OBSTACLE_SIZE;
 
-      // Ensure x and y positions keep the rectangle within canvas bounds
+      // Ensure x and y positions keep the obstacle within canvas bounds
       const randomX = Math.random() * (canvasWidth - randomWidth);
       const randomY = Math.random() * (canvasHeight - randomHeight);
 
       // Generate a unique ID for the obstacle
-      const id = Date.now() + obstacles.length;
+      const id = Date.now() + this.obstacleMap.size;
 
       // Create the obstacle
-      const candidateObstacle: Obstacle = {
-        id,
+      const obstacle: Obstacle = {
+        id: id.toString(),
         x: randomX,
         y: randomY,
         width: randomWidth,
@@ -46,13 +56,12 @@ export class ObstacleGenerationService {
       };
 
       // Check if the obstacle overlaps with any existing obstacles in relevant grids
-      if (!this.isOverlappingInGrid(candidateObstacle, gridMap)) {
-        obstacles.push(candidateObstacle);  // Add non-overlapping obstacle
-        this.addObstacleToMap(candidateObstacle, gridMap); // Add obstacle to grid map
+      if (!this.isOverlappingInGrid(obstacle, gridMap)) {
+        this.obstacleMap.set(id.toString(), obstacle); // Add non-overlapping obstacle
+        this.addObstacleToGridMap(obstacle, gridMap); // Add obstacle to grid map
       }
     }
-
-    this.obstaclesSubject.next(obstacles);
+    this.updateObstaclesSubject();
   }
 
   // Checks if a new obstacle overlaps with any obstacles in relevant grids
@@ -83,8 +92,8 @@ export class ObstacleGenerationService {
     return false; // No overlap
   }
 
-  // Adds an obstacle to the appropriate grids in the map
-  private addObstacleToMap(obstacle: Obstacle, gridMap: Map<string, Obstacle[]>): void {
+  // Adds an obstacle to the appropriate grids in the grid map
+  private addObstacleToGridMap(obstacle: Obstacle, gridMap: Map<string, Obstacle[]>): void {
     const startCol = Math.floor(obstacle.x / this.GRID_SIZE);
     const endCol = Math.floor((obstacle.x + obstacle.width) / this.GRID_SIZE);
     const startRow = Math.floor(obstacle.y / this.GRID_SIZE);
@@ -101,42 +110,46 @@ export class ObstacleGenerationService {
     }
   }
 
-  // Generates a random color as a 6-digit hexadecimal string
-  getRandomColor(): string {
-    const color = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
-    return `#${color}`;
-  }
-
   // Returns the current list of obstacles
   getCurrentObstacles(): Obstacle[] {
     return this.obstaclesSubject.getValue();
   }
 
-  // Add a new obstacle
-  addObstacle(obstacle: Obstacle): void {
-    const currentObstacles = this.obstaclesSubject.getValue();
-    this.obstaclesSubject.next([...currentObstacles, obstacle]);
+  // Get an obstacle by its ID
+  getObstacleById(id: string): Obstacle | undefined {
+    return this.obstacleMap.get(id);
   }
 
-  // Update an existing obstacle
-  updateObstacle(id: number, updatedProps: Partial<Obstacle>): void {
-    const obstacles = this.obstaclesSubject.getValue();
-    const obstacleIndex = obstacles.findIndex(obstacle => obstacle.id === id);
-    if (obstacleIndex >= 0) {
-      obstacles[obstacleIndex] = { ...obstacles[obstacleIndex], ...updatedProps };
-      this.obstaclesSubject.next([...obstacles]);
+  // Add a new obstacle
+  addObstacle(obstacle: Obstacle): void {
+    this.obstacleMap.set(obstacle.id, obstacle);
+    this.updateObstaclesSubject();
+  }
+
+  // Update an existing obstacle's properties
+  updateObstacle(id: string, updatedProps: Partial<Obstacle>): void {
+    const obstacle = this.obstacleMap.get(id);
+    if (obstacle) {
+      this.obstacleMap.set(id, { ...obstacle, ...updatedProps });
+      this.updateObstaclesSubject();
     }
   }
 
-  // Remove an obstacle
-  removeObstacle(id: number): void {
-    let obstacles = this.obstaclesSubject.getValue();
-    obstacles = obstacles.filter(obstacle => obstacle.id !== id);
-    this.obstaclesSubject.next([...obstacles]);
+  // Remove an obstacle by its ID
+  removeObstacle(id: string): void {
+    this.obstacleMap.delete(id);
+    this.updateObstaclesSubject();
   }
 
   // Clear all obstacles
   clearObstacles(): void {
-    this.obstaclesSubject.next([]);
+    this.obstacleMap.clear();
+    this.updateObstaclesSubject();
+  }
+
+  // Generate a random color as a 6-digit hexadecimal string
+  getRandomColor(): string {
+    const color = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+    return `#${color}`;
   }
 }

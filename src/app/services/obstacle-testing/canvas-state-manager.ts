@@ -1,7 +1,7 @@
 // Enum to represent the different possible states of the canvas
 export enum CanvasState {
   Idle = 'Idle',          // No current action
-  Drawing = 'Drawing',    // Currently drawing a rectangle
+  Drawing = 'Drawing',    // Currently drawing a obstacle
   Dragging = 'Dragging',  // Currently dragging an object
 }
 

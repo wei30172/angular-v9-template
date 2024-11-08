@@ -23,8 +23,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
   private readonly HEATMAP_DATA_COUNT = 100;
   private readonly OBSTACLE_COUNT = 20;
 
-  obstacleList: Obstacle[] = []; // Stores obstacle objects
-  obstacleVisible = true; // Controls the visibility of obstacles
+  obstacleVisible = true;
   
   private stage: Konva.Stage;
   private obstacleLayer: Konva.Layer;
@@ -120,6 +119,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
   
   // Bind the canvas interaction events
   private bindCanvasEvents() {
+    // Handle zoom in/out using the mouse wheel
     this.stage.on('wheel', (event: Konva.KonvaEventObject<WheelEvent>) => this.handleMouseWheel(event));
   }
 
@@ -139,66 +139,85 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$),
         distinctUntilChanged()
       )
-      .subscribe((newObstacles) => {
-        this.updateObstacles(newObstacles); // Update obstacle list
+      .subscribe(obstacles => {
+        this.renderObstacles(obstacles); // Render or update obstacles on the canvas
       });
   }
   
-  // Update obstacles on the canvas
-  private updateObstacles(newObstacles: Obstacle[]) {
-    this.obstacleList = newObstacles;
-
-    newObstacles.forEach(obstacle => {
-      this.addObstacleFromData(obstacle);
+  // Render or update obstacles on the canvas based on the latest data
+  private renderObstacles(obstaclesDate: Obstacle[]) {
+    obstaclesDate.forEach(obstacleDate => {
+      const obstacle = this.findObstacleById(obstacleDate.id);
+      if (obstacle) {
+        this.updateObstacle(obstacle, obstacleDate);
+      } else {
+        this.createObstacle(obstacleDate);
+      }
     });
-
     this.obstacleLayer.batchDraw();
   }
 
-   // Add new obstacle from data
-   private addObstacleFromData(obstacle: Obstacle) {
-    const rect = new Konva.Rect({
+  // Create new obstacle
+  private createObstacle(obstacle: Obstacle) {
+    const newObstacle = new Konva.Rect({
       x: obstacle.x,
       y: obstacle.y,
       width: obstacle.width,
       height: obstacle.height,
       fill: obstacle.color,
-      draggable: false,
+      draggable: true,
     });
 
-    this.addRectangleEventListeners(rect, obstacle.id);
-    this.obstacleLayer.add(rect);
+    newObstacle.setAttr('id', obstacle.id);
+    this.obstacleLayer.add(newObstacle);
+    this.addObstacleEventListeners(newObstacle);
   }
 
-  // Function to add event listeners to a rectangle
-  private addRectangleEventListeners(rect: Konva.Rect, obstacleId: number) {
-    this.konvaEventService.bindObjectEvents(rect, {
-      'mouseover': () => this.handleRectangleMouseOver(rect),
-      'mouseout': () => this.handleRectangleMouseOut(rect),
+  // Update existing obstacle
+  private updateObstacle(preObstacle: Konva.Rect, obstacle: Obstacle) {
+    preObstacle.setAttrs({
+      x: obstacle.x,
+      y: obstacle.y,
+      width: obstacle.width,
+      height: obstacle.height,
+      fill: obstacle.color,
     });
   }
 
-  // Mouse hovers over a rectangle, displaying the tooltip
-  private handleRectangleMouseOver(rect: Konva.Rect) {
+  private findObstacleById(id: string): Konva.Rect | null {
+    return this.obstacleLayer.findOne((node: Konva.Node) => {
+      return node instanceof Konva.Rect && node.getAttr('id') === id;
+    }) as Konva.Rect;
+  }
+
+  // Function to add event listeners to a obstacle
+  private addObstacleEventListeners(obstacle: Konva.Rect) {
+    this.konvaEventService.bindObjectEvents(obstacle, {
+      'mouseover': () => this.handleObstacleMouseOver(obstacle),
+      'mouseout': () => this.handleObstacleMouseOut(obstacle),
+    });
+  }
+
+  // Mouse hovers over a obstacle, displaying the tooltip
+  private handleObstacleMouseOver(obstacle: Konva.Rect) {
     // Update target stroke style
-    rect.setAttrs({
+    obstacle.setAttrs({
       stroke: 'rgba(255, 255, 255, 0.8)',
       strokeWidth: 1,
     });
 
     // Retrieve object position and dimensions
-    const { x, y, width, height } = rect.getClientRect();
+    const { x, y, width, height } = obstacle.getClientRect();
     const obstacleData = { x, y, width, height };
+    
     this.updateTooltip(obstacleData);
-
-    // Render updated styles and tooltip
     this.obstacleLayer.batchDraw();
   }
 
-  // Mouse leaves a Rectangle, hiding the tooltip
-  private handleRectangleMouseOut(rect: Konva.Rect) {
+  // Mouse leaves a obstacle, hiding the tooltip
+  private handleObstacleMouseOut(obstacle: Konva.Rect) {
     // Reset stroke style
-    rect.setAttrs({
+    obstacle.setAttrs({
       stroke: null,
       strokeWidth: 0,
     });

@@ -7,8 +7,8 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 })
 export class DeleteIconComponent {
   @Input() deleteIconStyle = {};
-  @Input() obstacleId: number;
-  @Output() deleteObstacle = new EventEmitter<number>();
+  @Input() obstacleId: string;
+  @Output() deleteObstacle = new EventEmitter<string>();
 
   onDelete() {
     this.deleteObstacle.emit(this.obstacleId);

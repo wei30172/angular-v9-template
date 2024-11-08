@@ -27,18 +27,18 @@
   
   <!-- Obstacle List -->
   <app-obstacle-list 
-    [obstacleList]="obstacleList" 
+    [obstacleList]="obstacles$ | async" 
     (selectObstacle)="selectObstacle($event)"
     (deleteObstacle)="deleteObstacle($event)">
   </app-obstacle-list>
 </div>
 
 <!-- Popup Overlay Component -->
-<app-popup-overlay *ngIf="showPopup" (close)="closeEditForm()"></app-popup-overlay>
+<app-popup-overlay *ngIf="isFormVisible" (close)="closeEditForm()"></app-popup-overlay>
 
 <!-- Edit Form Component -->
 <app-edit-form
-  *ngIf="showPopup"
+  *ngIf="isFormVisible"
   [formGroup]="obstacleForm"
   (close)="closeEditForm()"
   (submit)="submitEditForm()"
