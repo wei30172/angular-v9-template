@@ -17,7 +17,7 @@ export class ObstacleGenerationService {
   private readonly MIN_OBSTACLE_SIZE = 20; // Minimum obstacle size
   private readonly GRID_SIZE = this.MAX_OBSTACLE_SIZE; // Grid size based on max obstacle size
 
-  // Update the obstaclesSubject to emit the current obstacle list as an array
+  // Updates the observable with the current obstacle list
   private updateObstaclesSubject() {
     this.obstaclesSubject.next(Array.from(this.obstacleMap.values()));
   }
