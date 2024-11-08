@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged, debounceTime, withLatestFrom, filter, map } from 'rxjs/operators';
 import Konva from 'konva';
@@ -12,6 +11,7 @@ import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canv
 import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
 import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
 import { TooltipService } from 'src/app/services/shared/tooltip.service';
+import { NotificationService } from 'src/app/services/shared/notification.service';
 import { Obstacle } from './obstacle.model';
 
 enum ObstacleSettings {
@@ -50,17 +50,10 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
     private konvaEventService: KonvaEventService,
     private keyboardEventService: KeyboardEventService,
     private tooltipService: TooltipService,
-    private snackBar: MatSnackBar
+    private notificationService: NotificationService,
   ) {
     // Initialize the obstacle form
     this.obstacleForm = this.obstacleFormService.getForm();
-  }
-
-  // Opens a snackbar notification
-  openNotification(message: string) {
-    this.snackBar.open(message, 'OK', {
-      duration: 3000,
-    });
   }
 
   // Get current obstacle ID
@@ -716,11 +709,11 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
       this.obstacleFormService.showForm(obstacle);
       
       // Show notification
-      this.openNotification(`Editing obstacle with ID: ${obstacleId}`);
+      this.notificationService.open(`Editing obstacle with ID: ${obstacleId}`);
 
     } else {
       // Show error notification if obstacle not found
-      this.openNotification(`Obstacle with ID: ${obstacleId} not found`);
+      this.notificationService.open(`Obstacle with ID: ${obstacleId} not found`);
     }
   }
   
@@ -799,12 +792,12 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
     if (selectedOstacle) {
       // Show notification for selection
-      this.openNotification(`Selected obstacle with ID: ${obstacleId}`);
+      this.notificationService.open(`Selected obstacle with ID: ${obstacleId}`);
 
       this.selectAndUpdateObstacle(selectedOstacle);
     } else {
       // Show error notification if obstacle not found
-      this.openNotification(`Obstacle with ID: ${obstacleId} not found`);
+      this.notificationService.open(`Obstacle with ID: ${obstacleId} not found`);
     }
   }
 
@@ -817,12 +810,12 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
     if (obstacle) {
       // Show notification for deletion
-      this.openNotification(`Deleted obstacle with ID: ${obstacleId}`);
+      this.notificationService.open(`Deleted obstacle with ID: ${obstacleId}`);
 
       this.removeObstacleAndObstacle(obstacle, obstacleId);
     } else {
       // Show error notification if obstacle not found
-      this.openNotification(`Obstacle with ID: ${obstacleId} not found`);
+      this.notificationService.open(`Obstacle with ID: ${obstacleId} not found`);
     }
   }
 
