@@ -784,7 +784,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Toggle grid visibility
   toggleGrid() {
-    this.konvaCanvasService.toggleGrid();
+    this.konvaCanvasService.toggleGridLayer();
   }
 
   // Select an obstacle from the list and set it as active on the canvas

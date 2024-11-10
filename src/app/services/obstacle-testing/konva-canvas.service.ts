@@ -22,7 +22,7 @@ export class KonvaCanvasService {
   private gridVisible = false;
   
   // Default constants
-  private readonly DEFAULT_GRID_SIZE = 20;
+  private readonly DEFAULT_GRID_SIZE = 1;
   private readonly DEFAULT_WIDTH = 640;
   private readonly DEFAULT_HEIGHT = 640;
 
@@ -71,11 +71,26 @@ export class KonvaCanvasService {
     return this.stage;
   }
 
+  // Get the background layer
+  getBackgroundLayer(): Konva.Layer | null {
+    return this.backgroundLayer;
+  }
+
   // Get the obstacle layer
   getObstacleLayer(): Konva.Layer | null {
     return this.obstacleLayer;
   }
 
+  // Get the heatmap layer
+  getHeatmapLayer(): Konva.Layer | null {
+    return this.heatmapLayer;
+  }
+
+  // Get the grid layer
+  getGridLayer(): Konva.Layer | null {
+    return this.gridLayer;
+  }
+  
   // Get the obstacle transformer
   getTransformer(): Konva.Transformer | null {
     return this.transformer;
@@ -102,50 +117,133 @@ export class KonvaCanvasService {
     };
   }
 
-  // Create grid layer based on grid size
-  private createGridLayer(gridSize: number) {
+  // Create grid layer based on grid size, scale factor, and grid color
+  private createGridLayer(gridSize: number, scaleFactor: number = 1, gridColor: string = '#ddd') {
     if (!this.gridLayer) {
       throw new Error('Grid layer is not initialized.');
     }
-    
+  
     const width = this.stage.width();
     const height = this.stage.height();
-
+    const adjustedGridSize = gridSize * scaleFactor; // Adjust grid size based on scale factor
+  
+    // Clear previous grid lines
+    this.gridLayer.destroyChildren();
+  
     // Draw vertical and horizontal grid lines
-    for (let i = 0; i < width / gridSize; i++) {
-      this.gridLayer.add(new Konva.Line({
-        points: [i * gridSize, 0, i * gridSize, height],
-        stroke: '#ddd',
-        strokeWidth: 1,
-      }));
+    for (let i = 0; i < width / adjustedGridSize; i++) {
+      this.gridLayer.add(
+        new Konva.Line({
+          points: [i * adjustedGridSize, 0, i * adjustedGridSize, height],
+          stroke: gridColor,
+          strokeWidth: 0.1,
+        })
+      );
     }
-
-    for (let j = 0; j < height / gridSize; j++) {
-      this.gridLayer.add(new Konva.Line({
-        points: [0, j * gridSize, width, j * gridSize],
-        stroke: '#ddd',
-        strokeWidth: 1,
-      }));
+  
+    for (let j = 0; j < height / adjustedGridSize; j++) {
+      this.gridLayer.add(
+        new Konva.Line({
+          points: [0, j * adjustedGridSize, width, j * adjustedGridSize],
+          stroke: gridColor,
+          strokeWidth: 0.1,
+        })
+      );
     }
-
+  
     this.gridLayer.visible(this.gridVisible);
+    this.gridLayer.draw(); // Re-render the grid layer
   }
 
   // Toggle layer visibility
   toggleLayerVisibility(layer: Konva.Layer) {
+    if (!layer) {
+      console.warn('Layer is not initialized.');
+      return;
+    }
     layer.visible(!layer.visible());
     layer.draw();
     this.stage!.batchDraw();
   }
 
   // Toggle grid visibility
-  toggleGrid() {
+  toggleGridLayer() {
     if (this.gridLayer) this.toggleLayerVisibility(this.gridLayer);
   }
+  
+  // Move the layer up in the layer stack
+  moveLayerUp(layer: Konva.Layer) {
+    if (!layer) {
+      console.warn('Layer is not initialized.');
+      return;
+    }
+    layer.moveUp();
+    this.stage?.batchDraw();
+  }
 
-  // Toggle obstacle visibility
-  toggleObstacle() {
-    if (this.obstacleLayer) this.toggleLayerVisibility(this.obstacleLayer);
+  // Move the layer down in the layer stack
+  moveLayerDown(layer: Konva.Layer) {
+    if (!layer) {
+      console.warn('Layer is not initialized.');
+      return;
+    }
+    layer.moveDown();
+    this.stage?.batchDraw();
+  }
+
+  // Move the layer to the top of the layer stack
+  moveLayerToTop(layer: Konva.Layer) {
+    if (!layer) {
+      console.warn('Layer is not initialized.');
+      return;
+    }
+    layer.moveToTop();
+    this.stage?.batchDraw();
+  }
+  
+  // Move the layer to the bottom of the layer stack
+  moveLayerToBottom(layer: Konva.Layer) {
+    if (!layer) {
+      console.warn('Layer is not initialized.');
+      return;
+    }
+    layer.moveToBottom();
+    this.stage?.batchDraw();
+  }
+
+  // Move the layer to a specific index in the layer stack
+  moveLayerToIndex(layer: Konva.Layer, index: number) {
+    if (!layer || !this.stage) {
+      console.warn('Layer or stage is not initialized.');
+      return;
+    }
+
+    const layers = this.stage.getLayers(); // Get all layers
+    if (index < 0 || index >= layers.length) {
+      console.warn('Index is out of bounds.');
+      return;
+    }
+
+    layer.setZIndex(index); // Set the layer's index in the stack
+    this.stage.batchDraw();
+  }
+  
+  // Check if the layer is on the top of the layer stack
+  isLayerOnTop(layer: Konva.Layer): boolean {
+    if (!this.stage) {
+      console.warn('Stage is not initialized.');
+      return false;
+    }
+    return layer.getZIndex() === this.stage.getLayers().length - 1;
+  }
+
+  // Check if the layer is at the bottom of the layer stack
+  isLayerAtBottom(layer: Konva.Layer): boolean {
+    if (!this.stage) {
+      console.warn('Stage is not initialized.');
+      return false;
+    }
+    return layer.getZIndex() === 0;
   }
 
   // Adjust zoom level based on mouse wheel interaction
@@ -238,7 +336,7 @@ export class KonvaCanvasService {
         image: heatmapImage,
         width: this.stage!.width(),  // Set the width to match the stage width
         height: this.stage!.height(), // Set the height to match the stage height
-        opacity: 0.8,
+        opacity: 1,
       });
 
       // Clear previous heatmap images

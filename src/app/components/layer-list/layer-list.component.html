@@ -1,0 +1,20 @@
+<div class="layer-list">
+  <h3>Layer List: {{ layers.length }}</h3>
+  <ul>
+    <li *ngFor="let layerItem of layers">
+      <span>{{ layerItem.name }}</span>
+      <div class="layer-btn">
+        <button class="toggle-btn" (click)="onToggleVisibility(layerItem.layer)">
+          {{ layerItem.layer.visible() ? 'On' : 'Off' }}
+        </button>
+        <button
+          class="move-btn"
+          [ngClass]="{ 'top-btn': layerItem.isTop }"
+          (click)="onMoveLayerToTop(layerItem.layer)"
+        >
+          Top
+        </button>
+      </div>
+    </li>
+  </ul>
+</div>

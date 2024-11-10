@@ -11,12 +11,13 @@
   (toggleGrid)="toggleGrid()">
   </app-zoom-controls>
 
-  <!-- Toggle Obstacle -->
-  <app-toggle-obstacles
-    [obstacleVisible]="obstacleVisible"
-    (visibilityChange)="toggleObstaclesVisibility($event)"
-  >
-  </app-toggle-obstacles>
+   <!-- Toggle Layer -->
+  <app-toggle-layer
+    *ngFor="let layer of layers"
+    [name]="layer.name"
+    [layer]="layer.layer"
+    (toggleVisibility)="toggleLayerVisibility($event)">
+  </app-toggle-layer>
 </div>
 
 <div class="canvas-container">
@@ -28,4 +29,11 @@
 
   <!-- Tooltip Component -->
   <app-tooltip></app-tooltip>
+
+  <!-- Layer List -->
+  <app-layer-list
+    [layers]="layers"
+    (moveLayerToTop)="moveLayerToTop($event)" 
+    (toggleVisibility)="toggleLayerVisibility($event)">
+  </app-layer-list>
 </div>

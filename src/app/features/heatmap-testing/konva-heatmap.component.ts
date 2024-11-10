@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged } from 'rxjs/operators';
 import Konva from 'konva';
@@ -6,6 +6,7 @@ import Konva from 'konva';
 import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
 import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
+import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
 import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { HeatmapDataService } from 'src/app/services/heatmap-testing/heatmap-data.service';
 import { SimpleheatService } from 'src/app/services/heatmap-testing/simpleheat.service';
@@ -20,11 +21,10 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
   @ViewChild('simpleHeatCanvas', { static: true }) simpleHeatCanvas!: ElementRef<HTMLCanvasElement>;
   
   // Constants for canvas behavior
-  private readonly HEATMAP_DATA_COUNT = 100;
   private readonly OBSTACLE_COUNT = 20;
-
-  obstacleVisible = true;
   
+  layers = [];
+
   private stage: Konva.Stage;
   private obstacleLayer: Konva.Layer;
   private destroy$ = new Subject<void>();
@@ -33,6 +33,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
     private obstacleService: ObstacleGenerationService,
     private konvaCanvasService: KonvaCanvasService,
     private konvaEventService: KonvaEventService,
+    private keyboardEventService: KeyboardEventService,
     private tooltipService: TooltipService,
     private heatmapDataService: HeatmapDataService,
     private simpleheatService: SimpleheatService
@@ -50,6 +51,20 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
 
     this.bindCanvasEvents(); // Bind necessary canvas events
     this.subscribeToObstacles(); // Subscribe to obstacle data
+    this.registerKeyboardShortcuts(); // Register keyboard shortcuts with actions
+    
+    // Initialize layers list after canvas and layers have been set up
+    this.layers = [
+      { name: 'Obstacle Layer', layer: this.konvaCanvasService.getObstacleLayer(), isTop: false },
+      { name: 'Heatmap Layer', layer: this.konvaCanvasService.getHeatmapLayer(), isTop: false }
+    ];
+    this.updateLayerStatus();
+  }
+
+  updateLayerStatus() {
+    this.layers.forEach(layerItem => {
+      layerItem.isTop = this.konvaCanvasService.isLayerOnTop(layerItem.layer);
+    });
   }
 
   ngAfterViewInit() {
@@ -66,6 +81,9 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
       this.konvaCanvasService.clearStageAndLayers();
       this.konvaEventService.clearAllObjectEvents();
     }
+
+    // Clear all keyboard shortcuts
+    this.keyboardEventService.clearAllShortcuts();
   }
 
   // Initialize canvas and layer
@@ -82,6 +100,26 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
     );
   }
 
+  // Listen for global keydown events
+  @HostListener('window:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    this.keyboardEventService.handleKeyDown(event);
+  }
+
+  // Register keyboard shortcuts with actions
+  private registerKeyboardShortcuts() {
+    this.keyboardEventService.registerShortcuts([
+      { keyCombo: 'arrowup', action: () => this.moveCanvas(0, -1) },
+      { keyCombo: 'arrowdown', action: () => this.moveCanvas(0, 1) },
+      { keyCombo: 'arrowleft', action: () => this.moveCanvas(-1, 0) },
+      { keyCombo: 'arrowright', action: () => this.moveCanvas(1, 0) },
+      { keyCombo: '+', action: () => this.adjustZoom(1.1) },
+      { keyCombo: '-', action: () => this.adjustZoom(1 / 1.1) },
+      { keyCombo: '=', action: () => this.adjustZoom(1.1) },
+      { keyCombo: '_', action: () => this.adjustZoom(1 / 1.1) },
+    ]);
+  }
+  
   // Render heatmap using SimpleheatService
   private renderHeatmapWithSimpleheat() {
     const heatmapCanvas = this.simpleHeatCanvas.nativeElement;
@@ -92,7 +130,6 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
 
     // Generate heatmap data that covers the entire stage area
     const heatmapData = this.heatmapDataService.generateHeatmapData(
-      this.HEATMAP_DATA_COUNT,
       this.stage.width(),
       this.stage.height()
     );
@@ -113,7 +150,7 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
     // Add the generated heatmap as a layer to the Konva stage
     this.konvaCanvasService.addHeatmapLayer(heatmapImageUrl);
   }
-  
+
   // Bind the canvas interaction events
   private bindCanvasEvents() {
     // Handle zoom in/out using the mouse wheel
@@ -286,12 +323,22 @@ export class KonvaHeatmapComponent implements OnInit, OnDestroy {
 
   // Toggle grid visibility
   toggleGrid() {
-    this.konvaCanvasService.toggleGrid();
+    this.konvaCanvasService.toggleGridLayer();
   }
 
-  // Toggle Obstacles visibility
-  toggleObstaclesVisibility(visible: boolean) {
-    this.obstacleVisible = visible;
-    this.konvaCanvasService.toggleObstacle();
+  // Check if the layer is on the top of the layer stack
+  isLayerOnTop(layer: Konva.Layer): boolean {
+    return this.konvaCanvasService.isLayerOnTop(layer);
   }
+
+  // Move the layer to the top of the layer stack
+  moveLayerToTop(layer: Konva.Layer) {
+    this.konvaCanvasService.moveLayerToTop(layer);
+    this.updateLayerStatus();
+  }
+
+  // Toggle layer visibility
+  toggleLayerVisibility(layer: Konva.Layer) {
+    this.konvaCanvasService.toggleLayerVisibility(layer);
+  }  
 }
