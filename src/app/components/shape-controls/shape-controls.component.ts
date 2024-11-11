@@ -10,7 +10,7 @@ export class ShapeControlsComponent {
   @Output() shapeSelected = new EventEmitter<string>();
 
   shapes = [
-    { name: 'rectangle', symbol: '▭' },
+    { name: 'rectangle', symbol: '■' },
     { name: 'circle', symbol: '●' },
     { name: 'triangle', symbol: '▲' },
     { name: 'trapezoid', symbol: '⏢' }
