@@ -1,20 +1,28 @@
-<!-- Shape Controls -->
-<app-shape-controls
-  [selectedShape]="selectedShape"
-  (shapeSelected)="onShapeSelected($event)"
-></app-shape-controls>
+<div class="controls-container">
+  <!-- Shape Controls -->
+  <app-shape-controls
+    [selectedShape]="selectedShape"
+    (shapeSelected)="onShapeSelected($event)"
+  ></app-shape-controls>
 
-<!-- Zoom Controls -->
-<app-zoom-controls 
-  (zoomIn)="zoomIn()" 
-  (zoomOut)="zoomOut()" 
-  (moveUp)="moveUp()" 
-  (moveLeft)="moveLeft()" 
-  (moveRight)="moveRight()" 
-  (moveDown)="moveDown()" 
-  (resetZoom)="resetZoom()" 
-  (toggleGrid)="toggleGrid()">
-</app-zoom-controls>
+  <!-- Zoom Controls -->
+  <app-zoom-controls 
+    (zoomIn)="zoomIn()" 
+    (zoomOut)="zoomOut()" 
+    (moveUp)="moveUp()" 
+    (moveLeft)="moveLeft()" 
+    (moveRight)="moveRight()" 
+    (moveDown)="moveDown()" 
+    (resetZoom)="resetZoom()" 
+    (toggleGrid)="toggleGrid()">
+  </app-zoom-controls>
+
+  <!-- Toggle Button for Obstacle List -->
+  <button
+    (click)="toggleObstacleList()" class="toggle-list-btn">
+    {{ isObstacleListVisible ? '⊟' : '⊞' }} Obstacle List
+  </button>
+</div>
 
 <div class="canvas-container">
   <!-- Delete Icon -->
@@ -32,7 +40,8 @@
   <app-tooltip></app-tooltip>
   
   <!-- Obstacle List -->
-  <app-obstacle-list 
+  <app-obstacle-list
+    *ngIf="isObstacleListVisible"
     [obstacleList]="obstacles$ | async" 
     (selectObstacle)="selectObstacle($event)"
     (deleteObstacle)="deleteObstacle($event)">

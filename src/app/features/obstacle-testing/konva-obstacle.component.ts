@@ -22,7 +22,7 @@ enum ObstacleSettings {
 @Component({
   selector: 'app-konva-obstacle',
   templateUrl: './konva-obstacle.component.html',
-  styleUrls: ['./obstacle.component.scss']
+  styleUrls: ['./konva-obstacle.component.scss']
 })
 export class KonvaObstacleComponent implements OnInit, OnDestroy {
   // Constants for canvas behavior
@@ -30,6 +30,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   obstacleForm: FormGroup;
   isFormVisible = false;
+  isObstacleListVisible = false; 
   showDeleteIcon = false;
   deleteIconStyle = {};
   selectedShape: string = 'rectangle';
@@ -785,6 +786,11 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   // Toggle grid visibility
   toggleGrid() {
     this.konvaCanvasService.toggleGridLayer();
+  }
+
+  // Toggle obstacle list visibility
+  toggleObstacleList() {
+    this.isObstacleListVisible = !this.isObstacleListVisible;
   }
 
   // Select an obstacle from the list and set it as active on the canvas

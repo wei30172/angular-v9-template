@@ -30,23 +30,35 @@
       border-radius: 6px;
       transition: background-color 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      font-size: 14px;
 
       &:hover {
         background-color: #e0e0e0;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       
-      .color-box {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        margin-right: 12px;
-        border-radius: 4px;
-        border: 1px solid #999;
-        cursor: pointer;
-      }
+      .obstacle-info {
+        display: flex;
+        align-items: center;
+        font-size: 14px;
 
+        .color-box {
+          width: 20px;
+          height: 20px;
+          margin-right: 12px;
+          border-radius: 4px;
+          border: 1px solid #999;
+          cursor: pointer;
+        }
+
+        .obstacle-label {
+          margin-right: 4px;
+        }
+
+        .obstacle-id {
+          color: #666;
+        }
+      }
+      
       .delete-btn {
         margin-left: 4px;
         padding: 0;
