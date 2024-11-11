@@ -36,7 +36,7 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Generate a unique canvas ID with Date.now() and a random suffix
-    this.babylonCanvasId = `babylonCanvas-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    this.babylonCanvasId = `babylonCanvas-${Math.random().toString(36).substring(2, 9)}`;
   }
 
   ngAfterViewInit() {

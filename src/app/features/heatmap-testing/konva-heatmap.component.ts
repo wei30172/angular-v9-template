@@ -45,8 +45,8 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     // Generate a unique canvas ID with Date.now() and a random suffix
-    this.konvaHeatmapCanvasId = `konvaHeatmapCanvas-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    this.simpleHeatCanvasId = `simpleHeatCanvas-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    this.konvaHeatmapCanvasId = `konvaHeatmapCanvas-${Math.random().toString(36).substring(2, 9)}`;
+    this.simpleHeatCanvasId = `simpleHeatCanvas-${Math.random().toString(36).substring(2, 9)}`;
   }
 
   ngAfterViewInit() {
