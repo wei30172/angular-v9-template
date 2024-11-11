@@ -34,9 +34,9 @@ export class KeyboardEventService {
 
     // Build the key combo based on key and modifier keys
     const keyCombo = `${event.ctrlKey ? 'ctrl+' : ''}${key}`;
-    // console.log(keyString)
+    // console.log(keyCombo);
 
-    // Look for an action in the actionMap
+    // Look for an action in the actionMap and execute if found
     const action = this.keyActionMap.get(keyCombo);
     if (action) {
       event.preventDefault();

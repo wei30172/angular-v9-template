@@ -157,68 +157,45 @@ export class KonvaCanvasService {
 
   // Toggle layer visibility
   toggleLayerVisibility(layer: Konva.Layer) {
-    if (!layer) {
-      console.warn('Layer is not initialized.');
-      return;
-    }
-    layer.visible(!layer.visible());
-    layer.draw();
+    layer?.visible(!layer.visible());
+    layer?.draw();
     this.stage!.batchDraw();
   }
 
   // Toggle grid visibility
   toggleGridLayer() {
-    if (this.gridLayer) this.toggleLayerVisibility(this.gridLayer);
+    this.toggleLayerVisibility(this.gridLayer!);
   }
   
   // Move the layer up in the layer stack
   moveLayerUp(layer: Konva.Layer) {
-    if (!layer) {
-      console.warn('Layer is not initialized.');
-      return;
-    }
-    layer.moveUp();
+    layer?.moveUp();
     this.stage?.batchDraw();
   }
 
   // Move the layer down in the layer stack
   moveLayerDown(layer: Konva.Layer) {
-    if (!layer) {
-      console.warn('Layer is not initialized.');
-      return;
-    }
-    layer.moveDown();
+    layer?.moveDown();
     this.stage?.batchDraw();
   }
 
   // Move the layer to the top of the layer stack
   moveLayerToTop(layer: Konva.Layer) {
-    if (!layer) {
-      console.warn('Layer is not initialized.');
-      return;
-    }
-    layer.moveToTop();
+    layer?.moveToTop();
     this.stage?.batchDraw();
   }
   
   // Move the layer to the bottom of the layer stack
   moveLayerToBottom(layer: Konva.Layer) {
-    if (!layer) {
-      console.warn('Layer is not initialized.');
-      return;
-    }
-    layer.moveToBottom();
+    layer?.moveToBottom();
     this.stage?.batchDraw();
   }
 
   // Move the layer to a specific index in the layer stack
   moveLayerToIndex(layer: Konva.Layer, index: number) {
-    if (!layer || !this.stage) {
-      console.warn('Layer or stage is not initialized.');
-      return;
-    }
+    const layers = this.stage?.getLayers(); // Get all layers
+    if (!layer || !layers) return;
 
-    const layers = this.stage.getLayers(); // Get all layers
     if (index < 0 || index >= layers.length) {
       console.warn('Index is out of bounds.');
       return;
@@ -230,20 +207,12 @@ export class KonvaCanvasService {
   
   // Check if the layer is on the top of the layer stack
   isLayerOnTop(layer: Konva.Layer): boolean {
-    if (!this.stage) {
-      console.warn('Stage is not initialized.');
-      return false;
-    }
-    return layer.getZIndex() === this.stage.getLayers().length - 1;
+    return layer?.getZIndex() === this.stage?.getLayers().length - 1;
   }
 
   // Check if the layer is at the bottom of the layer stack
   isLayerAtBottom(layer: Konva.Layer): boolean {
-    if (!this.stage) {
-      console.warn('Stage is not initialized.');
-      return false;
-    }
-    return layer.getZIndex() === 0;
+    return layer?.getZIndex() === 0;
   }
 
   // Adjust zoom level based on mouse wheel interaction
