@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged, debounceTime, withLatestFrom, filter, map } from 'rxjs/operators';
@@ -24,7 +24,10 @@ enum ObstacleSettings {
   templateUrl: './konva-obstacle.component.html',
   styleUrls: ['./konva-obstacle.component.scss']
 })
-export class KonvaObstacleComponent implements OnInit, OnDestroy {
+export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy {
+  // Dynamic ID for konvaObstacleCanvas
+  konvaObstacleCanvasId: string;
+
   // Constants for canvas behavior
   private readonly OBSTACLE_COUNT = 20;
 
@@ -69,6 +72,11 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Generate a unique canvas ID with Date.now() and a random suffix
+    this.konvaObstacleCanvasId = `konvaObstacleCanvas-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  ngAfterViewInit() {
     this.initializeCanvas(); // Initialize canvas and layer
     this.loadBackgroundImage(); // Load the background image
 
@@ -86,10 +94,10 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     // Unsubscribe from all observables
-    this.obstacleService.clearObstacles();
     this.destroy$.next();
     this.destroy$.complete();
 
+    // Clear stage resources and events
     if (this.stage) {
       this.konvaCanvasService.clearStageAndLayers();
       this.konvaEventService.clearAllObjectEvents();
@@ -101,7 +109,7 @@ export class KonvaObstacleComponent implements OnInit, OnDestroy {
 
   // Initialize canvas and layer
   private initializeCanvas() {
-    this.konvaCanvasService.initializeStage('KonvaObstacleCanvas');
+    this.konvaCanvasService.initializeStage(this.konvaObstacleCanvasId);
     this.stage = this.konvaCanvasService.getStage();
     this.obstacleLayer = this.konvaCanvasService.getObstacleLayer();
     this.transformer = this.konvaCanvasService.getTransformer();
