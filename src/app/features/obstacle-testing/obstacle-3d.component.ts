@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/co
 import * as BABYLON from 'babylonjs';
 import { Subscription } from 'rxjs';
 import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
+import { BabylonService } from 'src/app/services/obstacle-testing//babylon.service';
 import { Obstacle } from './obstacle.model';
 
 @Component({
@@ -10,98 +11,134 @@ import { Obstacle } from './obstacle.model';
   styleUrls: ['./obstacle-3d.component.scss']
 })
 export class Obstacle3DComponent implements OnInit, OnDestroy {
-  @ViewChild('babylonCanvas', { static: true }) babylonCanvas: ElementRef<HTMLCanvasElement>;
+  // Dynamic ID for babylonCanvas
+  babylonCanvasId: string;
 
-  private engine: BABYLON.Engine;
-  private scene: BABYLON.Scene;
-  private camera: BABYLON.ArcRotateCamera;
+  // Constants for canvas behavior
+  private readonly OBSTACLE_COUNT = 20;
+
+  // Stores the obstacles' 3D representations
+  private obstaclesMeshes = new Map<string, BABYLON.Mesh>();
   private obstacleSubscription: Subscription;
 
-  // Background image URL for 3D ground texture
+  // Define constants for scene configuration
   private readonly BACKGROUND_IMAGE_URL = 'assets/images/floorplan.jpg';
-  private readonly GROUND_SIZE = 640; // Ground size based on 2D canvas size
+  private readonly GROUND_SIZE = 640; // Match 2D canvas size
   private readonly OBSTACLE_HEIGHT = 50; // Fixed height for all obstacles
 
-  constructor(private obstacleService: ObstacleGenerationService) {}
+  // Local copy of obstacles to avoid modifying the original data
+  private localObstacles: Obstacle[] = [];
+  
+  constructor(
+    private obstacleService: ObstacleGenerationService,
+    private babylonService: BabylonService
+  ) {}
 
   ngOnInit() {
-    this.initBabylonEngine(); // Initialize BABYLON engine and scene
-    this.loadBackgroundImage(); // Load background image as ground texture
+    // Generate a unique canvas ID with Date.now() and a random suffix
+    this.babylonCanvasId = `babylonCanvas-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  }
 
-    // Subscribe to obstacles data from ObstacleGenerationService
+  ngAfterViewInit() {
+    // Initialize the Babylon engine and load the background image
+    this.initBabylonEngine();
+
+    // Subscribe to obstacle data to keep 3D obstacles synchronized with 2D data
     this.obstacleSubscription = this.obstacleService.obstacles$.subscribe(obstacles => {
-      this.clearObstacles(); // Clear previous obstacles from the scene
-      obstacles.forEach(obstacle => this.create3DObstacle(obstacle)); // Render each obstacle in 3D
+      // Clone obstacles data to localObstacles to avoid affecting external data
+      this.localObstacles = obstacles.map(obstacle => ({ ...obstacle }));
+      this.updateObstaclesInScene(this.localObstacles); // Use local data to update scene
     });
 
     // Generate random obstacles initially
-    this.obstacleService.generateRandomObstacles(20, this.GROUND_SIZE, this.GROUND_SIZE);
+    this.obstacleService.generateRandomObstacles(
+      this.OBSTACLE_COUNT,
+      this.GROUND_SIZE,
+      this.GROUND_SIZE
+    );
   }
 
   ngOnDestroy() {
-    this.engine.dispose(); // Clean up BABYLON engine resources
-    this.obstacleSubscription.unsubscribe(); // Unsubscribe from obstacles data
+    // Unsubscribe from obstacle data
+    this.obstacleSubscription.unsubscribe();
+    
+    // Dispose of Babylon engine resources
+    this.babylonService.disposeEngine();
   }
 
-  // Initialize BABYLON engine, scene, and camera
+  // Initialize the Babylon engine and load the background image
   private initBabylonEngine() {
-    const canvas = this.babylonCanvas.nativeElement;
-    this.engine = new BABYLON.Engine(canvas, true);
-    this.scene = new BABYLON.Scene(this.engine);
+    // Get the canvas element by the dynamically generated ID
+    const babylonCanvas = document.getElementById(this.babylonCanvasId) as unknown as HTMLCanvasElement;
+    // console.log({babylonCanvas})
 
-    // Set up camera
-    this.camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 800, new BABYLON.Vector3(0, 0, 0), this.scene);
-    this.camera.attachControl(canvas, true);
+    // Initialize the Babylon engine and scene
+    this.babylonService.initializeEngine(babylonCanvas);
 
-    // Add a light source
-    const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), this.scene);
-    light.intensity = 0.7;
+    // Load a background image as ground texture in the scene
+    this.babylonService.loadBackgroundImage(this.BACKGROUND_IMAGE_URL, this.GROUND_SIZE);
+  }
 
-    // Start rendering loop
-    this.engine.runRenderLoop(() => {
-      this.scene.render();
+  // Synchronize 3D scene obstacles with the provided list
+  private updateObstaclesInScene(obstacles: Obstacle[]) {
+    // Retrieve the scene instance from BabylonService
+    const scene = this.babylonService.getScene();
+    if (!scene) return;
+
+    // Track currently existing obstacle IDs
+    const currentIds = new Set(this.obstaclesMeshes.keys());
+
+    // Update or create each obstacle as needed
+    obstacles.forEach(obstacle => {
+      this.createOrUpdate3DObstacle(obstacle);
+      currentIds.delete(obstacle.id); // Remove from set once processed
     });
+
+    // Remove obstacles that are no longer in the data source
+    currentIds.forEach(id => this.remove3DObstacle(id));
   }
 
-  // Load a background image as a ground texture in 3D scene
-  private loadBackgroundImage() {
-    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: this.GROUND_SIZE, height: this.GROUND_SIZE }, this.scene);
-    const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", this.scene);
+  // Create or update a 3D obstacle based on the current data
+  private createOrUpdate3DObstacle(obstacle: Obstacle) {
+    const scene = this.babylonService.getScene();
+    if (!scene) return;
+    
+    // Check if the obstacle already has a corresponding 3D box
+    let box = this.obstaclesMeshes.get(obstacle.id);
 
-    const texture = new BABYLON.Texture(this.BACKGROUND_IMAGE_URL, this.scene);
-    texture.uScale = -1;
-    texture.vScale = -1;
-    groundMaterial.diffuseTexture = texture;
-
-    ground.material = groundMaterial;
-    ground.position.y = 0; // Ensure ground is at zero level
+    if (box) {
+      // Update position and color if dimensions are unchanged
+      box.position.x = -(obstacle.x - this.GROUND_SIZE / 2 + obstacle.width / 2);
+      box.position.z = -(this.GROUND_SIZE / 2 - obstacle.y - obstacle.height / 2);
+      (box.material as BABYLON.StandardMaterial).diffuseColor = BABYLON.Color3.FromHexString(obstacle.color);
+    } else {
+      // Create a new box with exact dimensions from the obstacle data
+      box = BABYLON.MeshBuilder.CreateBox(`obstacle-${obstacle.id}`, {
+        width: obstacle.width,
+        depth: obstacle.height,
+        height: this.OBSTACLE_HEIGHT,
+      }, scene);
+  
+      // Set material and apply color based on obstacle data
+      const material = new BABYLON.StandardMaterial(`material-${obstacle.id}`, scene);
+      material.diffuseColor = BABYLON.Color3.FromHexString(obstacle.color);
+      box.material = material;
+  
+      box.position.x = -(obstacle.x - this.GROUND_SIZE / 2 + obstacle.width / 2);
+      box.position.z = -(this.GROUND_SIZE / 2 - obstacle.y - obstacle.height / 2);
+      box.position.y = this.OBSTACLE_HEIGHT / 2;
+  
+      // Save the newly created box in the map
+      this.obstaclesMeshes.set(obstacle.id, box);
+    }
   }
 
-  // Clear previously rendered obstacles from the scene
-  private clearObstacles() {
-    const obstaclesMeshes = this.scene.meshes.filter(mesh => mesh.name.startsWith('obstacle-'));
-    obstaclesMeshes.forEach(mesh => mesh.dispose());
-  }
-
-  // Create a 3D representation of the obstacle with aligned positioning
-  private create3DObstacle(obstacle: Obstacle) {
-    // Create a box for each obstacle with specified width, height, and fixed depth
-    const box = BABYLON.MeshBuilder.CreateBox(`obstacle-${obstacle.id}`, {
-      width: obstacle.width,
-      depth: obstacle.height,
-      height: this.OBSTACLE_HEIGHT,
-    }, this.scene);
-
-    // Position the box to align with 2D coordinates
-    const halfGroundSize = this.GROUND_SIZE / 2;
-    box.position.x = obstacle.x - halfGroundSize + obstacle.width / 2; // Center on the ground
-    box.position.z = halfGroundSize - obstacle.y - obstacle.height / 2; // Adjust to match 2D coordinates
-    box.position.y = this.OBSTACLE_HEIGHT / 2; // Place obstacle at ground level
-    // box.rotation.y = BABYLON.Angle.FromDegrees(obstacle.rotationAngle).radians();
-
-    // Apply material with the specified color
-    const material = new BABYLON.StandardMaterial(`material-${obstacle.id}`, this.scene);
-    material.diffuseColor = BABYLON.Color3.FromHexString(obstacle.color);
-    box.material = material;
+  // Remove a 3D obstacle from the scene and the map if it's no longer needed
+  private remove3DObstacle(id: string) {
+    const box = this.obstaclesMeshes.get(id);
+    if (box) {
+      box.dispose(); // Dispose of the mesh to free resources
+      this.obstaclesMeshes.delete(id); // Remove entry from map
+    }
   }
 }
