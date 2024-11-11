@@ -1,7 +1,7 @@
 .controls-container {
   display: flex;
-  gap: 6px;
   align-items: center;
+  gap: 6px;
   margin-bottom: 10px;
 }
 
@@ -9,15 +9,14 @@
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
-  gap: 8px;
   
-  #KonvaHeatmapCanvas, #KonvaObstacleCanvas, #simpleHeatCanvas {
+  .konvaHeatmapCanvas, .simpleHeatCanvas {
     border: 1px solid black;
     width: 640px;
     height: 640px;
   }
 
-  #KonvaHeatmapCanvas, #KonvaObstacleCanvas {
+  .konvaHeatmapCanvas {
     display: block;
   }
 }

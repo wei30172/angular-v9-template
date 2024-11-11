@@ -11,7 +11,7 @@
   (toggleGrid)="toggleGrid()">
   </app-zoom-controls>
 
-   <!-- Toggle Layer -->
+  <!-- Toggle Layer -->
   <app-toggle-layer
     *ngFor="let layer of layers"
     [name]="layer.name"
@@ -22,10 +22,17 @@
 
 <div class="canvas-container">
   <!-- Konva Canvas -->
-  <div id="KonvaHeatmapCanvas"></div>
+  <div
+    [id]="konvaHeatmapCanvasId"
+    class="konvaHeatmapCanvas">
+  </div>
 
   <!-- Simpleheat Canvas -->
-  <canvas #simpleHeatCanvas id="simpleHeatCanvas" style="display: none;"></canvas>
+  <canvas
+    [id]="simpleHeatCanvasId"
+    class="simpleHeatCanvas"
+    style="display: none;">
+  </canvas>
 
   <!-- Tooltip Component -->
   <app-tooltip></app-tooltip>
