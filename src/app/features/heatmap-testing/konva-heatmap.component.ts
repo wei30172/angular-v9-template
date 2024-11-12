@@ -31,6 +31,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private stage: Konva.Stage;
   private obstacleLayer: Konva.Layer;
+  private heatmapLayer: Konva.Layer;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -44,7 +45,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Generate a unique canvas ID with Date.now() and a random suffix
+    // Generate a unique canvas ID with a random suffix, e.g., konvaHeatmapCanvas-abc123xyz
     this.konvaHeatmapCanvasId = `konvaHeatmapCanvas-${Math.random().toString(36).substring(2, 9)}`;
     this.simpleHeatCanvasId = `simpleHeatCanvas-${Math.random().toString(36).substring(2, 9)}`;
   }
@@ -62,7 +63,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.bindCanvasEvents(); // Bind necessary canvas events
     this.subscribeToObstacles(); // Subscribe to obstacle data
     this.registerKeyboardShortcuts(); // Register keyboard shortcuts with actions
-    this.renderHeatmapWithSimpleheat(); // Render heatmap
+    this.generateAndRenderHeatmap(); // Render heatmap
     
     // Use setTimeout to defer initialization until after change detection completes
     setTimeout(() => {
@@ -93,6 +94,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.konvaCanvasService.initializeStage(this.konvaHeatmapCanvasId);
     this.stage = this.konvaCanvasService.getStage();
     this.obstacleLayer = this.konvaCanvasService.getObstacleLayer();
+    this.heatmapLayer = this.konvaCanvasService.getHeatmapLayer();
   }
 
   // Load the background image for the canvas
@@ -105,8 +107,8 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   // Initialize layers list after canvas and layers have been set up
   private initializeLayerList() {
     this.layers = [
-      { name: 'Obstacle Layer', layer: this.konvaCanvasService.getObstacleLayer(), isTop: false },
-      { name: 'Heatmap Layer', layer: this.konvaCanvasService.getHeatmapLayer(), isTop: false }
+      { name: 'Obstacle Layer', layer: this.obstacleLayer, isTop: false },
+      { name: 'Heatmap Layer', layer: this.heatmapLayer, isTop: false }
     ];
     this.updateLayerStatus();
   }
@@ -138,8 +140,8 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     ]);
   }
   
-  // Render heatmap using SimpleheatService
-  private renderHeatmapWithSimpleheat() {
+  // Generate and render heatmap
+  private generateAndRenderHeatmap() {
     // Get the canvas element by the dynamically generated ID
     const heatmapCanvas = document.getElementById(this.simpleHeatCanvasId) as unknown as HTMLCanvasElement;
     // console.log({heatmapCanvas})
@@ -149,19 +151,13 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     heatmapCanvas.height = this.stage.height();
 
     // Generate heatmap data that covers the entire stage area
-    const heatmapData = this.heatmapDataService.generateHeatmapData(
+    this.heatmapDataService.generateHeatmapData(
       this.stage.width(),
       this.stage.height()
     );
     
     // Initialize Simpleheat on the heatmap canvas
     this.simpleheatService.initializeHeatmap(heatmapCanvas);
-
-    // Format data for Simpleheat
-    const formattedData = heatmapData.map((point) => [point.x, point.y, point.value] as [number, number, number]);
-    
-    // Render the heatmap to the canvas
-    this.simpleheatService.setHeatmapData(formattedData);
     this.simpleheatService.render();
 
     // Convert the heatmap canvas to a PNG image URL
@@ -169,6 +165,34 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     
     // Add the generated heatmap as a layer to the Konva stage
     this.konvaCanvasService.addHeatmapLayer(heatmapImageUrl);
+
+    if (this.heatmapLayer) {
+      this.heatmapLayer.on('mousemove', () => this.handleHeatmapHover());
+      this.heatmapLayer.on('mouseleave', () => this.tooltipService.hideTooltip());
+    }
+  }
+  
+  // Display intensity data on hover
+  private handleHeatmapHover() {
+    const pointerPosition = this.heatmapLayer.getRelativePointerPosition();
+    if (!pointerPosition) return;
+    
+    const gridX = Math.floor(pointerPosition.x); 
+    const gridY = Math.floor(pointerPosition.y); 
+    // console.log({gridX, gridY})
+
+    // Retrieve the average intensity within the specified radius
+    const averageIntensity = this.heatmapDataService.getAverageIntensityInRadius(gridX, gridY);
+    
+    if (averageIntensity !== null) {
+      this.tooltipService.showTooltip({
+        description: `Intensity: ${averageIntensity.toFixed(2)}`,
+        targetPos: { x: gridX, y: gridY },
+        container: this.stage.container(),
+      });
+    } else {
+      this.tooltipService.hideTooltip();
+    }
   }
 
   // Bind the canvas interaction events
