@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Obstacle } from 'src/app/features/obstacle-testing/obstacle.model';
 import { BehaviorSubject } from 'rxjs';
+import { ObstacleCollisionService } from './obstacle-collision.service'; 
 
 @Injectable({
   providedIn: 'root'
 })
 export class ObstacleGenerationService {
+  private isInitialized = false;
+
   // Use a Map to store obstacles by their IDs
   private obstacleMap = new Map<string, Obstacle>();
 
@@ -15,7 +18,10 @@ export class ObstacleGenerationService {
   
   private readonly MAX_OBSTACLE_SIZE = 120; // Maximum obstacle size
   private readonly MIN_OBSTACLE_SIZE = 20; // Minimum obstacle size
-  private readonly GRID_SIZE = this.MAX_OBSTACLE_SIZE; // Grid size based on max obstacle size
+  
+  constructor(
+    private collisionService: ObstacleCollisionService
+  ) {}
 
   // Updates the observable with the current obstacle list
   private updateObstaclesSubject() {
@@ -24,15 +30,14 @@ export class ObstacleGenerationService {
 
   // Generate random obstacles with specified count and canvas boundaries
   generateRandomObstacles(count: number, canvasWidth: number, canvasHeight: number): void {
-    this.obstacleMap.clear(); // Clear existing obstacles
-
+    if (this.isInitialized) return; // Prevent re-generation
+    this.isInitialized = true; // Mark as initialized
+    
     if (count <= 0 || canvasWidth <= 0 || canvasHeight <= 0) {
       console.warn('Invalid parameters for obstacle generation');
       return;
     }
     
-    const gridMap: Map<string, Obstacle[]> = new Map();  // Map for grid-based placement
-
     while (this.obstacleMap.size < count) {
       // Generate random dimensions within specified range (between MIN_OBSTACLE_SIZE and MAX_OBSTACLE_SIZE)
       const randomWidth = Math.random() * (this.MAX_OBSTACLE_SIZE - this.MIN_OBSTACLE_SIZE) + this.MIN_OBSTACLE_SIZE;
@@ -56,58 +61,12 @@ export class ObstacleGenerationService {
       };
 
       // Check if the obstacle overlaps with any existing obstacles in relevant grids
-      if (!this.isOverlappingInGrid(obstacle, gridMap)) {
+      if (!this.collisionService.isOverlapping(obstacle)) {
         this.obstacleMap.set(id.toString(), obstacle); // Add non-overlapping obstacle
-        this.addObstacleToGridMap(obstacle, gridMap); // Add obstacle to grid map
+        this.collisionService.addObstacleToGridMap(obstacle); // Add obstacle to grid map
       }
     }
     this.updateObstaclesSubject();
-  }
-
-  // Checks if a new obstacle overlaps with any obstacles in relevant grids
-  private isOverlappingInGrid(newObstacle: Obstacle, gridMap: Map<string, Obstacle[]>): boolean {
-    const startCol = Math.floor(newObstacle.x / this.GRID_SIZE);
-    const endCol = Math.floor((newObstacle.x + newObstacle.width) / this.GRID_SIZE);
-    const startRow = Math.floor(newObstacle.y / this.GRID_SIZE);
-    const endRow = Math.floor((newObstacle.y + newObstacle.height) / this.GRID_SIZE);
-
-    // Check each relevant grid cell for potential overlaps
-    for (let col = startCol; col <= endCol; col++) {
-      for (let row = startRow; row <= endRow; row++) {
-        const key = `${col}-${row}`;
-        const gridObstacles = gridMap.get(key) || [];
-
-        for (const obstacle of gridObstacles) {
-          if (
-            newObstacle.x < obstacle.x + obstacle.width &&
-            newObstacle.x + newObstacle.width > obstacle.x &&
-            newObstacle.y < obstacle.y + obstacle.height &&
-            newObstacle.y + newObstacle.height > obstacle.y
-          ) {
-            return true; // Overlap detected
-          }
-        }
-      }
-    }
-    return false; // No overlap
-  }
-
-  // Adds an obstacle to the appropriate grids in the grid map
-  private addObstacleToGridMap(obstacle: Obstacle, gridMap: Map<string, Obstacle[]>): void {
-    const startCol = Math.floor(obstacle.x / this.GRID_SIZE);
-    const endCol = Math.floor((obstacle.x + obstacle.width) / this.GRID_SIZE);
-    const startRow = Math.floor(obstacle.y / this.GRID_SIZE);
-    const endRow = Math.floor((obstacle.y + obstacle.height) / this.GRID_SIZE);
-
-    for (let col = startCol; col <= endCol; col++) {
-      for (let row = startRow; row <= endRow; row++) {
-        const key = `${col}-${row}`;
-        if (!gridMap.has(key)) {
-          gridMap.set(key, []);
-        }
-        gridMap.get(key)!.push(obstacle);
-      }
-    }
   }
 
   // Returns the current list of obstacles
@@ -124,6 +83,9 @@ export class ObstacleGenerationService {
   addObstacle(obstacle: Obstacle): void {
     this.obstacleMap.set(obstacle.id, obstacle);
     this.updateObstaclesSubject();
+    // const adjustedObstacle = this.collisionService.adjustToBoundary(obstacle, this.getCurrentObstacles());
+    // this.obstacleMap.set(adjustedObstacle.id, adjustedObstacle);
+    // this.updateObstaclesSubject();
   }
 
   // Update an existing obstacle's properties
@@ -133,6 +95,12 @@ export class ObstacleGenerationService {
       this.obstacleMap.set(id, { ...obstacle, ...updatedProps });
       this.updateObstaclesSubject();
     }
+    // const obstacle = this.obstacleMap.get(id);
+    // if (obstacle) {
+    //   const updatedObstacle = this.collisionService.adjustToBoundary({ ...obstacle, ...updatedProps }, this.getCurrentObstacles());
+    //   this.obstacleMap.set(id, updatedObstacle);
+    //   this.updateObstaclesSubject();
+    // }
   }
 
   // Remove an obstacle by its ID
