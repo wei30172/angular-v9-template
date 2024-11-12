@@ -19,10 +19,9 @@ export class KonvaCanvasService {
   private heatmapLayer: Konva.Layer | null = null;
   private gridLayer: Konva.Layer | null = null;
   private transformer: Konva.Transformer | null = null;
-  private gridVisible = false;
   
   // Default constants
-  private readonly DEFAULT_GRID_SIZE = 1;
+  private readonly DEFAULT_GRID_SIZE = 10;
   private readonly DEFAULT_WIDTH = 640;
   private readonly DEFAULT_HEIGHT = 640;
 
@@ -52,6 +51,9 @@ export class KonvaCanvasService {
     this.gridLayer.moveToBottom();
     this.backgroundLayer.moveToBottom();
     this.heatmapLayer.moveDown();
+
+    // Initialize obstacle layer with transparent background
+    this.initializeObstacleLayer();
 
     // Initialize the transformer
     this.transformer = new Konva.Transformer({
@@ -117,8 +119,27 @@ export class KonvaCanvasService {
     };
   }
 
+  // Add the transparent background to the obstacle layer
+  private initializeObstacleLayer() {
+    const backgroundRect = new Konva.Rect({
+      x: 0,
+      y: 0,
+      width: this.stage!.width(),
+      height: this.stage!.height(),
+      fill: 'rgba(0, 0, 0, 0)', // Transparent fill to capture events
+    });
+    
+    this.obstacleLayer!.add(backgroundRect);
+    this.obstacleLayer!.draw();
+  }
+
   // Create grid layer based on grid size, scale factor, and grid color
-  private createGridLayer(gridSize: number, scaleFactor: number = 1, gridColor: string = '#ddd') {
+  private createGridLayer(
+    gridSize: number,
+    scaleFactor: number = 1,
+    gridColor: string = '#ddd',
+    strokeWidth: number = 0.2
+  ) {
     if (!this.gridLayer) {
       throw new Error('Grid layer is not initialized.');
     }
@@ -136,7 +157,7 @@ export class KonvaCanvasService {
         new Konva.Line({
           points: [i * adjustedGridSize, 0, i * adjustedGridSize, height],
           stroke: gridColor,
-          strokeWidth: 0.1,
+          strokeWidth,
         })
       );
     }
@@ -146,12 +167,12 @@ export class KonvaCanvasService {
         new Konva.Line({
           points: [0, j * adjustedGridSize, width, j * adjustedGridSize],
           stroke: gridColor,
-          strokeWidth: 0.1,
+          strokeWidth,
         })
       );
     }
   
-    this.gridLayer.visible(this.gridVisible);
+    this.gridLayer.visible(false);
     this.gridLayer.draw(); // Re-render the grid layer
   }
 
@@ -334,6 +355,5 @@ export class KonvaCanvasService {
     this.obstacleLayer = null;
     this.heatmapLayer = null;
     this.gridLayer = null;
-    this.gridVisible = false;
   }
 }

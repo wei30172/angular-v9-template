@@ -10,7 +10,7 @@ import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.ser
 import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { HeatmapDataService } from 'src/app/services/heatmap-testing/heatmap-data.service';
 import { SimpleheatService } from 'src/app/services/heatmap-testing/simpleheat.service';
-import { Obstacle } from 'src/app/features/obstacle-testing/obstacle.model';
+import { Obstacle } from 'src/app/models/obstacle.model';
 
 @Component({
   selector: 'app-konva-heatmap',
@@ -315,7 +315,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     // Show the tooltip with calculated position and content
     this.tooltipService.showTooltip({
       description,
-      targetData: obstacleData,
+      targetPos: obstacleData,
       container: this.stage.container(),
     });
   }

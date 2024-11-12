@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Obstacle } from 'src/app/features/obstacle-testing/obstacle.model';
+import { Obstacle } from 'src/app/models/obstacle.model';
 import { BehaviorSubject } from 'rxjs';
 import { ObstacleCollisionService } from './obstacle-collision.service'; 
 
@@ -47,8 +47,8 @@ export class ObstacleGenerationService {
       const randomX = Math.random() * (canvasWidth - randomWidth);
       const randomY = Math.random() * (canvasHeight - randomHeight);
 
-      // Generate a unique ID for the obstacle
-      const id = Date.now() + this.obstacleMap.size;
+      // Generate unique ID for the new obstacle, e.g., obstacle-abc123xyz
+      const id = `obstacle-${Math.random().toString(36).substring(2, 9)}`;
 
       // Create the obstacle
       const obstacle: Obstacle = {

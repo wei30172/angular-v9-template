@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Obstacle } from 'src/app/features/obstacle-testing/obstacle.model';
+import { Obstacle } from 'src/app/models/obstacle.model';
 
 @Injectable({
   providedIn: 'root'

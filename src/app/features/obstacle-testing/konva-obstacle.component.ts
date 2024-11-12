@@ -12,7 +12,7 @@ import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event
 import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
 import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { NotificationService } from 'src/app/services/shared/notification.service';
-import { Obstacle } from './obstacle.model';
+import { Obstacle } from 'src/app/models/obstacle.model';
 
 enum ObstacleSettings {
   MinDrag = 5,
@@ -72,7 +72,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngOnInit() {
-    // Generate a unique canvas ID with Date.now() and a random suffix
+    // Generate a unique canvas ID with a random suffix, e.g., konvaObstacleCanvas-abc123xyz
     this.konvaObstacleCanvasId = `konvaObstacleCanvas-${Math.random().toString(36).substring(2, 9)}`;
   }
 
@@ -260,8 +260,8 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     if (this.copiedObstacle) {
       const { newX, newY } = this.calculateOffsetPosition();
 
-      // Assign new ID for the new obstacle
-      const id = Date.now().toString();
+      // Generate unique ID for the new obstacle, e.g., obstacle-abc123xyz
+      const id = `obstacle-${Math.random().toString(36).substring(2, 9)}`;
       
       const newObstacle = new Konva.Rect({
         x: newX,
@@ -368,8 +368,8 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Handle mouse down event for starting obstacle drawing or dragging
   private handleMouseDown(event: Konva.KonvaEventObject<MouseEvent>) {
     if (this.canvasStateManager.isDragging() || this.canvasStateManager.isDrawing()) return;
-
-    if (event.target instanceof Konva.Rect) {
+    
+    if (event.target.id() && event.target.id().includes('obstacle')) {
       this.canvasStateManager.setState(CanvasState.Dragging);
       return;
     }
@@ -432,8 +432,8 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   private createNewObstacle() {
     const randomColor = this.obstacleService.getRandomColor();
 
-    // Assign new ID for the new obstacle
-    const id = Date.now().toString();
+    // Generate unique ID for the new obstacle, e.g., obstacle-abc123xyz
+    const id = `obstacle-${Math.random().toString(36).substring(2, 9)}`;
 
     const newObstacle = new Konva.Rect({
       x: this.startX,
@@ -705,7 +705,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     // Show the tooltip with calculated position and content
     this.tooltipService.showTooltip({
       description,
-      targetData: obstacleData,
+      targetPos: obstacleData,
       container: this.stage.container(),
     });
   }

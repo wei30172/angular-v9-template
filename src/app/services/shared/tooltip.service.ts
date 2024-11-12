@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { Obstacle } from 'src/app/features/obstacle-testing/obstacle.model';
+import { Obstacle } from 'src/app/models/obstacle.model';
 
 interface TooltipConfig {
   title?: string;
   description?: string;
-  targetData: Partial<Obstacle>;
+  targetPos: Partial<Obstacle>;
   container: HTMLElement | HTMLCanvasElement;
   offset?: number;
   position?: 'top' | 'bottom' | 'left' | 'right';
@@ -23,7 +23,7 @@ export class TooltipService {
     title?: string;
     description?: string;
     style: { top: string; left: string };
-    targetData: Partial<Obstacle>
+    targetPos: Partial<Obstacle>
   } | null>(null);
 
   // Observable for tooltip updates
@@ -39,7 +39,7 @@ export class TooltipService {
     const {
       title,
       description,
-      targetData,
+      targetPos,
       container,
       offset = 10,
       position = 'bottom',
@@ -47,7 +47,6 @@ export class TooltipService {
       tooltipWidth = this.tooltipWidth,
       throttleDelay = 100,
     } = config;
-    
     // Skip execution if throttling is active
     if (this.isThrottling) return;
 
@@ -56,7 +55,7 @@ export class TooltipService {
     setTimeout(() => (this.isThrottling = false), throttleDelay);
     
     const tooltipPosition = this.calculatePosition(
-      targetData,
+      targetPos,
       container,
       offset,
       position,
@@ -64,7 +63,7 @@ export class TooltipService {
       tooltipWidth
     );
     
-    this.tooltipSubject.next({ title, description, style: tooltipPosition, targetData });
+    this.tooltipSubject.next({ title, description, style: tooltipPosition, targetPos });
   }
 
   // Hide the tooltip
@@ -74,7 +73,7 @@ export class TooltipService {
 
   // Calculate tooltip position
   private calculatePosition(
-    targetData: Partial<Obstacle>,
+    targetPos: Partial<Obstacle>,
     container: HTMLElement | HTMLCanvasElement,
     offset: number,
     position: 'top' | 'bottom' | 'left' | 'right',
@@ -83,7 +82,7 @@ export class TooltipService {
   ) {
     // Get container boundaries to calculate tooltip placement
     const containerRect = container.getBoundingClientRect();
-    const { x = 0, y = 0, width = 0, height = 0 } = targetData;
+    const { x = 0, y = 0, width = 0, height = 0 } = targetPos;
   
     // Calculate obstacle's absolute position on the container
     const obstacleTop = y + containerRect.top;

@@ -3,7 +3,7 @@ import * as BABYLON from 'babylonjs';
 import { Subscription } from 'rxjs';
 import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 import { BabylonService } from 'src/app/services/obstacle-testing//babylon.service';
-import { Obstacle } from './obstacle.model';
+import { Obstacle } from 'src/app/models/obstacle.model';
 
 @Component({
   selector: 'app-obstacle-3d',
@@ -35,7 +35,7 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Generate a unique canvas ID with Date.now() and a random suffix
+    // Generate a unique canvas ID with a random suffix, e.g., babylonCanvas-abc123xyz
     this.babylonCanvasId = `babylonCanvas-${Math.random().toString(36).substring(2, 9)}`;
   }
 
