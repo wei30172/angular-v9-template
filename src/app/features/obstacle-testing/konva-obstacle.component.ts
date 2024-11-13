@@ -323,15 +323,21 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Handle the obstacle selection logic and update the delete icon
   private selectAndUpdateObstacle(obstacle: Konva.Rect) {
     obstacle.draggable(true);
-
     this.transformer.nodes([obstacle]);
     this.transformer.moveToTop();
     obstacle.moveToTop();
 
     this.currentObstacle = obstacle;
-
     this.updateDeleteIconPosition(obstacle);
     this.obstacleLayer.draw();
+
+    this.transformer.on('transformstart', () => {
+      this.canvasStateManager.setState(CanvasState.Transforming);
+    });
+  
+    this.transformer.on('transformend', () => {
+      this.canvasStateManager.setState(CanvasState.Idle);
+    });
   }
 
   // Update the position of the delete icon relative to the selected obstacle
@@ -367,6 +373,8 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Handle mouse down event for starting obstacle drawing or dragging
   private handleMouseDown(event: Konva.KonvaEventObject<MouseEvent>) {
+    if (this.canvasStateManager.isTransforming()) return;
+
     if (this.canvasStateManager.isDragging() || this.canvasStateManager.isDrawing()) return;
     
     if (event.target.id() && event.target.id().includes('obstacle')) {

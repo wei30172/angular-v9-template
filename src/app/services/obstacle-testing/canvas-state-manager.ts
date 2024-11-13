@@ -1,8 +1,9 @@
 // Enum to represent the different possible states of the canvas
 export enum CanvasState {
-  Idle = 'Idle',          // No current action
-  Drawing = 'Drawing',    // Currently drawing a obstacle
-  Dragging = 'Dragging',  // Currently dragging an object
+  Idle = 'Idle', // No current action
+  Drawing = 'Drawing', // Currently drawing a obstacle
+  Dragging = 'Dragging', // Currently dragging a obstacle
+  Transforming = 'Transforming', // Currently transforming a obstacle
 }
 
 // Class to manage the current state of the canvas
@@ -33,5 +34,10 @@ export class CanvasStateManager {
   // Check if the canvas is currently in the 'Dragging' state
   isDragging(): boolean {
     return this.currentState === CanvasState.Dragging;
+  }
+
+  // Check if the canvas is currently in the 'Transforming' state
+  isTransforming(): boolean {
+    return this.currentState === CanvasState.Transforming;
   }
 }
