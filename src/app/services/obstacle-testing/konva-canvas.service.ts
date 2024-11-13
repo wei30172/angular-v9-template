@@ -344,6 +344,9 @@ export class KonvaCanvasService {
       // Remove all event listeners
       this.stage.off();
       
+      // Clear all transformer events if transformer exists
+      this.transformer?.off();
+
       // Destroy all layers and destroy the stage
       this.stage.getLayers().forEach(layer => layer.destroy());
       this.stage.destroy();
@@ -355,5 +358,6 @@ export class KonvaCanvasService {
     this.obstacleLayer = null;
     this.heatmapLayer = null;
     this.gridLayer = null;
+    this.transformer = null;
   }
 }

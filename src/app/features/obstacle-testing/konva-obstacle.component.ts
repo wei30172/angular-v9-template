@@ -331,6 +331,9 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     this.updateDeleteIconPosition(obstacle);
     this.obstacleLayer.draw();
 
+    this.transformer.off('transformstart');
+    this.transformer.off('transformend');
+
     this.transformer.on('transformstart', () => {
       this.canvasStateManager.setState(CanvasState.Transforming);
     });
@@ -361,6 +364,9 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     this.transformer.nodes([]);
     this.obstacleLayer.batchDraw();
     
+    this.transformer.off('transformstart');
+    this.transformer.off('transformend');
+
     this.currentObstacle = null;
     this.canvasStateManager.setState(CanvasState.Idle);
   }
