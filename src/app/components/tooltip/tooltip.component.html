@@ -1,4 +1,22 @@
-<div #tooltip class="tooltip" *ngIf="tooltip$ | async as tooltipData" [ngStyle]="tooltipData.style">
-  <div *ngIf="tooltipData.title" class="tooltip-title">{{ tooltipData.title }}</div>
-  <div *ngIf="tooltipData.description" class="tooltip-description">{{ tooltipData.description }}</div>
+<div #tooltip 
+  class="tooltip"
+  [ngClass]="[tooltipData.theme || 'dark', isExpanded ? 'interactive' : '']" 
+  *ngIf="tooltip$ | async as tooltipData" 
+  [ngStyle]="tooltipData.style"
+  (mouseleave)="hideTooltip()"
+>
+  
+    <div class="tooltip-header">
+      <div *ngIf="tooltipData.title" class="tooltip-title">{{ tooltipData.title }}</div>
+      <button (click)="closeTooltip()" class="close-btn">✖</button>
+    </div>
+  
+  <div class="tooltip-description-wrapper">
+    <span *ngIf="tooltipData.description && !isExpanded" 
+          (click)="toggleDescription()" 
+          class="expand-btn">... </span>
+    <div class="tooltip-description" *ngIf="tooltipData.description">
+      <div *ngIf="isExpanded" [innerHTML]="renderTooltipContent(tooltipData.description)"></div>
+    </div>
+  </div>
 </div>

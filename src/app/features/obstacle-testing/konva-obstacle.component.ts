@@ -10,7 +10,7 @@ import { CanvasState, CanvasStateManager } from 'src/app/services/obstacle-testi
 import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
 import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
 import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
-import { TooltipService } from 'src/app/services/shared/tooltip.service';
+import { TargetBounds, TooltipService } from 'src/app/services/shared/tooltip.service';
 import { NotificationService } from 'src/app/services/shared/notification.service';
 import { Obstacle } from 'src/app/models/obstacle.model';
 
@@ -360,7 +360,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Deselect transformer and hide the delete icon
   private deselectObstacle() {
     this.hideDeleteIcon();
-
+    
     this.transformer.nodes([]);
     this.obstacleLayer.batchDraw();
     
@@ -379,9 +379,13 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Handle mouse down event for starting obstacle drawing or dragging
   private handleMouseDown(event: Konva.KonvaEventObject<MouseEvent>) {
-    if (this.canvasStateManager.isTransforming()) return;
-
-    if (this.canvasStateManager.isDragging() || this.canvasStateManager.isDrawing()) return;
+    if (
+      this.canvasStateManager.isTransforming() ||
+      this.canvasStateManager.isDragging() ||
+      this.canvasStateManager.isDrawing()
+    ) {
+      return;
+    }
     
     if (event.target.id() && event.target.id().includes('obstacle')) {
       this.canvasStateManager.setState(CanvasState.Dragging);
@@ -690,8 +694,12 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     });
 
     // Retrieve object position and dimensions
-    const { x, y, width, height } = obstacle.getClientRect();
-    const obstacleData = { x, y, width, height };
+    const obstacleData = {
+      x: obstacle.x(),
+      y: obstacle.y(),
+      width: obstacle.width(),
+      height: obstacle.height(),
+    };
     
     this.updateTooltip(obstacleData);
     this.obstacleLayer.batchDraw();
@@ -705,21 +713,23 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
       strokeWidth: 0,
     });
     
-    this.tooltipService.hideTooltip();
-    this.obstacleLayer.batchDraw();
+    // this.tooltipService.hideTooltip();
+    // this.obstacleLayer.batchDraw();
   }
 
   // Update Tooltip position and content
   private updateTooltip(
-    obstacleData: Partial<Obstacle>,
+    obstacleData: TargetBounds,
   ) {
-    const { x = 0, y = 0 } = obstacleData;
-    const description = `Obstacle at (${Math.round(x)}, ${Math.round(y)})`;
+    const { x = 0, y = 0, width = 0, height = 0 } = obstacleData;
+    const title = `Obstacle at (${Math.round(x)}, ${Math.round(y)})`;
+    const description = `Width: ${width.toFixed(2)}, Height: ${height.toFixed(2)}`;
 
     // Show the tooltip with calculated position and content
     this.tooltipService.showTooltip({
+      title,
       description,
-      targetPos: obstacleData,
+      targetBounds: obstacleData,
       container: this.stage.container(),
     });
   }

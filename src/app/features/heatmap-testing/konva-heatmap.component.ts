@@ -7,7 +7,7 @@ import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obs
 import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
 import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
 import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
-import { TooltipService } from 'src/app/services/shared/tooltip.service';
+import { TargetBounds, TooltipService } from 'src/app/services/shared/tooltip.service';
 import { HeatmapDataService } from 'src/app/services/heatmap-testing/heatmap-data.service';
 import { SimpleheatService } from 'src/app/services/heatmap-testing/simpleheat.service';
 import { Obstacle } from 'src/app/models/obstacle.model';
@@ -153,12 +153,12 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     // Generate heatmap data that covers the entire stage area
     this.heatmapDataService.generateHeatmapData(
       this.stage.width(),
-      this.stage.height()
+      this.stage.height(),
     );
     
     // Initialize Simpleheat on the heatmap canvas
     this.simpleheatService.initializeHeatmap(heatmapCanvas);
-    this.simpleheatService.render();
+    this.simpleheatService.renderHeatmap();
 
     // Convert the heatmap canvas to a PNG image URL
     const heatmapImageUrl = heatmapCanvas.toDataURL('image/png');
@@ -168,7 +168,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.heatmapLayer) {
       this.heatmapLayer.on('mousemove', () => this.handleHeatmapHover());
-      this.heatmapLayer.on('mouseleave', () => this.tooltipService.hideTooltip());
+      // this.heatmapLayer.on('mouseleave', () => this.tooltipService.hideTooltip());
     }
   }
   
@@ -182,12 +182,16 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     // console.log({gridX, gridY})
 
     // Retrieve the average intensity within the specified radius
-    const averageIntensity = this.heatmapDataService.getAverageIntensityInRadius(gridX, gridY);
-    
+    const averageIntensity = this.heatmapDataService.getAverageIntensityInRadius(gridX, gridY) ?? 0;
+
+    const title = `Intensity: ${averageIntensity.toFixed(2)}`;
+    const description = { X: gridX, Y: gridY };
+
     if (averageIntensity !== null) {
       this.tooltipService.showTooltip({
-        description: `Intensity: ${averageIntensity.toFixed(2)}`,
-        targetPos: { x: gridX, y: gridY },
+        title,
+        description,
+        targetBounds: { x: gridX, y: gridY },
         container: this.stage.container(),
       });
     } else {
@@ -285,8 +289,12 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     // Retrieve object position and dimensions
-    const { x, y, width, height } = obstacle.getClientRect();
-    const obstacleData = { x, y, width, height };
+    const obstacleData = {
+      x: obstacle.x(),
+      y: obstacle.y(),
+      width: obstacle.width(),
+      height: obstacle.height(),
+    };
     
     this.updateTooltip(obstacleData);
     this.obstacleLayer.batchDraw();
@@ -300,22 +308,21 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
       strokeWidth: 0,
     });
 
-    // Hide tooltip and render changes
-    this.tooltipService.hideTooltip();
-    this.obstacleLayer.batchDraw();
   }
 
   // Update Tooltip position and content
   private updateTooltip(
-    obstacleData: Partial<Obstacle>,
+    obstacleData: TargetBounds,
   ) {
-    const { x = 0, y = 0 } = obstacleData;
-    const description = `Obstacle at (${Math.round(x)}, ${Math.round(y)})`;
+    const { x = 0, y = 0, width = 0, height = 0 } = obstacleData;
+    const title = `Obstacle at (${Math.round(x)}, ${Math.round(y)})`;
+    const description = [`Width: ${width.toFixed(2)}`, `Height: ${height.toFixed(2)}`];
 
     // Show the tooltip with calculated position and content
     this.tooltipService.showTooltip({
+      title,
       description,
-      targetPos: obstacleData,
+      targetBounds: obstacleData,
       container: this.stage.container(),
     });
   }
