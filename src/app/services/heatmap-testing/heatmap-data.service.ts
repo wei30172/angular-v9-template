@@ -6,16 +6,21 @@ import { Injectable } from '@angular/core';
 export class HeatmapDataService {
   pixelData: Map<number, Map<number, number>> = new Map(); // Nested Map for efficient lookup, stores intensity for each (x, y) coordinate point.
   private cache: Map<string, number> = new Map(); // Cache for already-calculated areas
+  private readonly DEFAULT_SCALE = 1;  // Factor to increase data resolution for more detailed rendering
 
   // Generate heatmap data based on canvas width and height
   generateHeatmapData(
     width: number,
     height: number,
-    step: number = 2  // Step size for iterating around each heat point
+    scale: number = this.DEFAULT_SCALE,
+    step: number = 2,  // Step size for iterating around each heat point
   ): void {
-    const heatPoints = this.generateRandomHeatPoints(width, height);
-    const radius = 50; // Radius around each heat point to affect
+    const scaledWidth = Math.round(width * scale);
+    const scaledHeight = Math.round(height * scale);
 
+    const heatPoints = this.generateRandomHeatPoints(scaledWidth, scaledHeight, scale);
+    const radius = 50 * Math.sqrt(scale); // Radius around each heat point to affect
+    
     // Process each heat point and calculate its influence on surrounding pixels
     heatPoints.forEach(point => {
       for (let dx = -radius; dx <= radius; dx += step) {
@@ -23,7 +28,7 @@ export class HeatmapDataService {
           const x = Math.round(point.x + dx);
           const y = Math.round(point.y + dy);
 
-          if (x >= 0 && x < width && y >= 0 && y < height) {
+          if (x >= 0 && x < scaledWidth && y >= 0 && y < scaledHeight) {
             const distance = Math.sqrt(dx ** 2 + dy ** 2);
             if (distance <= radius) {
               const influence = point.value * (1 - distance / radius); // Decrease influence by distance
@@ -59,20 +64,26 @@ export class HeatmapDataService {
     return this.pixelData.get(x)?.get(y) || null;
   }
 
-  // Retrieve the average intensity within the specified radius
+  // Retrieve intensity at a specific pixel, adjusting for scale
   getAverageIntensityInRadius(
     x: number,
     y: number,
-    radius: number = 1 // Radius around (x, y) to calculate the average intensity
+    radius: number = 1, // Radius around (x, y) to calculate the average intensity
+    scale: number = this.DEFAULT_SCALE
   ): number | null {
+    const adjustedX = Math.round(x * scale);
+    const adjustedY = Math.round(y * scale);
+    const adjustedRadius = Math.round(radius * scale);
+  
     let sumIntensity = 0;
     let count = 0;
 
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -adjustedRadius; dx <= adjustedRadius; dx++) {
+      for (let dy = -adjustedRadius; dy <= adjustedRadius; dy++) {
         const distance = Math.sqrt(dx ** 2 + dy ** 2);
-        if (distance <= radius) {
-          const intensity = this.getPixelIntensity(x + dx, y + dy);
+        if (distance <= adjustedRadius) {
+
+          const intensity = this.getPixelIntensity(adjustedX + dx, adjustedY + dy);
           if (intensity !== null) {
             sumIntensity += intensity;
             count++;
@@ -85,9 +96,13 @@ export class HeatmapDataService {
   }
   
   // Generate random heat points within canvas dimensions
-  private generateRandomHeatPoints(width: number, height: number): { x: number; y: number; value: number }[] {
+  private generateRandomHeatPoints(
+    width: number,
+    height: number,
+    scale: number
+  ): { x: number; y: number; value: number }[] {
     const totalPixels = width * height;
-    const heatPointCount = Math.floor(totalPixels * 0.001); // 0.1% of the total canvas pixels as heat points
+    const heatPointCount = Math.floor(totalPixels * 0.001 / scale); // 0.1% of the total canvas pixels as heat points
     const heatPoints = [];
   
     for (let i = 0; i < heatPointCount; i++) {
