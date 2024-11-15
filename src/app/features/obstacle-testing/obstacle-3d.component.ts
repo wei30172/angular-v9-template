@@ -102,35 +102,49 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
   private createOrUpdate3DObstacle(obstacle: Obstacle) {
     const scene = this.babylonService.getScene();
     if (!scene) return;
-    
+
     // Check if the obstacle already has a corresponding 3D box
     let box = this.obstaclesMeshes.get(obstacle.id);
 
     if (box) {
-      // Update position and color if dimensions are unchanged
-      box.position.x = -(obstacle.x - this.GROUND_SIZE / 2 + obstacle.width / 2);
-      box.position.z = -(this.GROUND_SIZE / 2 - obstacle.y - obstacle.height / 2);
-      (box.material as BABYLON.StandardMaterial).diffuseColor = BABYLON.Color3.FromHexString(obstacle.color);
+      // Update position and color if the obstacle already exists
+      this.setBoxPosition(box, obstacle);
+      this.updateBoxMaterial(box, obstacle.color);
     } else {
-      // Create a new box with exact dimensions from the obstacle data
+      // Create a new box with dimensions from the obstacle data
       box = BABYLON.MeshBuilder.CreateBox(`obstacle-${obstacle.id}`, {
         width: obstacle.width,
         depth: obstacle.height,
         height: this.OBSTACLE_HEIGHT,
       }, scene);
-  
-      // Set material and apply color based on obstacle data
-      const material = new BABYLON.StandardMaterial(`material-${obstacle.id}`, scene);
-      material.diffuseColor = BABYLON.Color3.FromHexString(obstacle.color);
-      box.material = material;
-  
-      box.position.x = -(obstacle.x - this.GROUND_SIZE / 2 + obstacle.width / 2);
-      box.position.z = -(this.GROUND_SIZE / 2 - obstacle.y - obstacle.height / 2);
-      box.position.y = this.OBSTACLE_HEIGHT / 2;
-  
+
+      // Set initial material and position for the new box
+      this.setBoxMaterial(box, obstacle.color, scene);
+      this.setBoxPosition(box, obstacle);
+    
       // Save the newly created box in the map
       this.obstaclesMeshes.set(obstacle.id, box);
     }
+  }
+
+  // Set the position of the box based on obstacle data
+  private setBoxPosition(box: BABYLON.Mesh, obstacle: Obstacle) {
+    box.position.x = -(obstacle.x - this.GROUND_SIZE / 2 + obstacle.width / 2);
+    box.position.z = -(this.GROUND_SIZE / 2 - obstacle.y - obstacle.height / 2);
+    box.position.y = this.OBSTACLE_HEIGHT / 2;
+  }
+
+  // Update the color material of an existing box
+  private updateBoxMaterial(box: BABYLON.Mesh, color: string) {
+    (box.material as BABYLON.StandardMaterial).diffuseColor = BABYLON.Color3.FromHexString(color);
+  }
+
+  // Set the initial material and color for a new box
+  private setBoxMaterial(box: BABYLON.Mesh, color: string, scene: BABYLON.Scene, transparency: number = 0.9) {
+    const material = new BABYLON.StandardMaterial(`material-${box.id}`, scene);
+    material.diffuseColor = BABYLON.Color3.FromHexString(color);
+    material.alpha = transparency;
+    box.material = material;
   }
 
   // Remove a 3D obstacle from the scene and the map if it's no longer needed
