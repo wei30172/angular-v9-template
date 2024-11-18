@@ -107,7 +107,10 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
     let box = this.obstaclesMeshes.get(obstacle.id);
 
     if (box) {
-      // Update position and color if the obstacle already exists
+      // Update dimensions
+      this.updateBoxDimensions(box, obstacle);
+
+      // Update position and material
       this.setBoxPosition(box, obstacle);
       this.updateBoxMaterial(box, obstacle.color);
     } else {
@@ -124,6 +127,18 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
     
       // Save the newly created box in the map
       this.obstaclesMeshes.set(obstacle.id, box);
+    }
+  }
+
+  // Update the dimensions of an existing box
+  private updateBoxDimensions(box: BABYLON.Mesh, obstacle: Obstacle) {
+    const currentWidth = box.scaling.x * box.getBoundingInfo().boundingBox.extendSize.x * 2;
+    const currentDepth = box.scaling.z * box.getBoundingInfo().boundingBox.extendSize.z * 2;
+
+    if (currentWidth !== obstacle.width || currentDepth !== obstacle.height) {
+      // Update the scaling of the box to match new dimensions
+      box.scaling.x = obstacle.width / (box.getBoundingInfo().boundingBox.extendSize.x * 2);
+      box.scaling.z = obstacle.height / (box.getBoundingInfo().boundingBox.extendSize.z * 2);
     }
   }
 
