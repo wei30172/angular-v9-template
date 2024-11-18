@@ -13,7 +13,7 @@ const routes: Routes = [
   { path: 'obstacle-3d', component: Obstacle3DComponent },
   { path: 'konva-heatmap', component: KonvaHeatmapComponent },
   { path: 'pdf-test', component: PdfTestComponent },
-  { path: '', redirectTo: '/konva-heatmap', pathMatch: 'full' },
+  { path: '', redirectTo: '/konva-obstacle', pathMatch: 'full' },
 ];
 
 @NgModule({
