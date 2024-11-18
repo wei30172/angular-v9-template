@@ -11,7 +11,7 @@ export class ShapeControlsComponent {
 
   shapes = [
     { name: 'rectangle', shapeClass: 'rectangle' },
-    { name: 'circle', shapeClass: 'ellipse' },
+    { name: 'ellipse', shapeClass: 'ellipse' },
     { name: 'triangle', shapeClass: 'triangle' },
     { name: 'trapezoid', shapeClass: 'trapezoid' }
   ];
