@@ -2,7 +2,13 @@
   <div class="konva-section">
     <app-konva-obstacle></app-konva-obstacle>
   </div>
-  <div class="babylon-section">
+  <div
+    class="babylon-section"
+    [ngClass]="{ 'scaled': isBabylonSectionExpanded }"
+  >
     <app-obstacle-3d></app-obstacle-3d>
+    <button class="zoom-btn" (click)="zoomBabylonSection()">
+      {{ isBabylonSectionExpanded ? '➖' : '➕' }}
+    </button>
   </div>
 </div>
