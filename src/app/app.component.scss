@@ -5,7 +5,7 @@
 .content {
   box-sizing: border-box;
   transition: margin-left 0.3s ease, width 0.3s ease;
-  padding: 20px;
+  padding: 0 20px;
 
   &.sidebar-open {
     margin-left: 240px;
