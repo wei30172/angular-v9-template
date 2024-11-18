@@ -5,6 +5,6 @@
     (click)="selectShape(shape.name)"
     [ngClass]="{ selected: selectedShape === shape.name }"
   >
-    {{ shape.symbol }}
+    <div class="shape" [ngClass]="shape.shapeClass"></div>
   </button>
 </div>
