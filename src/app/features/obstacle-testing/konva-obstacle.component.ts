@@ -736,6 +736,9 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Show the edit form and save the original data
   private showEditForm(obstacleId: string) {
+    this.hideDeleteIcon();
+    this.tooltipService.hideTooltip();
+
     const obstacle = this.obstacleService.getObstacleById(obstacleId);
 
     if (obstacle) {
