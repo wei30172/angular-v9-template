@@ -193,6 +193,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
         description,
         targetBounds: { x: gridX, y: gridY },
         container: this.stage.container(),
+        theme: 'light'
       });
     } else {
       this.tooltipService.hideTooltip();
@@ -324,6 +325,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
       description,
       targetBounds: obstacleData,
       container: this.stage.container(),
+      theme: 'custom'
     });
   }
 
