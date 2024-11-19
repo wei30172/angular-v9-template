@@ -505,6 +505,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Handle zooming with the mouse wheel
   private handleMouseWheel(event: Konva.KonvaEventObject<WheelEvent>) {
     this.hideDeleteIcon();
+    this.tooltipService.hideTooltip();
 
     const wheelEvent = event.evt as WheelEvent;
     wheelEvent.preventDefault();
@@ -783,12 +784,14 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Reset the zoom to the default level
   resetZoom() {
     this.hideDeleteIcon();
+    this.tooltipService.hideTooltip();
     this.konvaCanvasService.resetZoom();
   }
 
   // Adjust the zoom level
   private adjustZoom(factor: number) {
     this.hideDeleteIcon();
+    this.tooltipService.hideTooltip();
     this.konvaCanvasService.adjustZoom(factor);
   }
   
@@ -815,6 +818,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Adjust the canvas position by panning
   private moveCanvas(directionX: number, directionY: number) {
     this.hideDeleteIcon();
+    this.tooltipService.hideTooltip();
     this.konvaCanvasService.moveCanvas(directionX, directionY);
   }
 
