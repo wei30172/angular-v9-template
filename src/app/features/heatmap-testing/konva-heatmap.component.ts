@@ -72,6 +72,8 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.tooltipService.destroyTooltip();
+
     // Unsubscribe from all observables
     this.destroy$.next();
     this.destroy$.complete();
@@ -210,9 +212,8 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   private handleMouseWheel(event: Konva.KonvaEventObject<WheelEvent>) {
     const wheelEvent = event.evt as WheelEvent;
     wheelEvent.preventDefault();
-  
-    // Adjust zoom level
     this.konvaCanvasService.adjustMouseWheelZoom(wheelEvent);
+    this.tooltipService.updateTooltipPosition();
   }
 
   // Subscribe to obstacle updates from the service
@@ -289,15 +290,14 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
       strokeWidth: 1,
     });
 
-    // Retrieve object position and dimensions
-    const obstacleData = {
+    // Update Tooltip position and content
+    this.updateTooltip({
       x: obstacle.x(),
       y: obstacle.y(),
       width: obstacle.width(),
       height: obstacle.height(),
-    };
-    
-    this.updateTooltip(obstacleData);
+    });
+
     this.obstacleLayer.batchDraw();
   }
 
@@ -342,11 +342,13 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   // Reset the zoom to the default level
   resetZoom() {
     this.konvaCanvasService.resetZoom();
+    this.tooltipService.updateTooltipPosition();
   }
 
   // Adjust the zoom level
   private adjustZoom(factor: number) {
     this.konvaCanvasService.adjustZoom(factor);
+    this.tooltipService.updateTooltipPosition();
   }
   
   // Move the stage up
@@ -372,6 +374,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   // Adjust the canvas position by panning
   private moveCanvas(directionX: number, directionY: number) {
     this.konvaCanvasService.moveCanvas(directionX, directionY);
+    this.tooltipService.updateTooltipPosition();
   }
 
   // Toggle grid visibility

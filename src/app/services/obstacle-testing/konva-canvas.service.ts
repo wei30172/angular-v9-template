@@ -313,6 +313,14 @@ export class KonvaCanvasService {
     this.stage.batchDraw();
   }
 
+  // Get the current scale and pan state of the canvas
+  getCanvasState() {
+    if (!this.stage) return;
+    const scale = this.stage.scaleX();
+    const { x: panX, y: panY } = this.stage.position();
+    return { scale, panX, panY };
+  }
+
   // Add heatmap layer
   addHeatmapLayer(imageUrl: string) {
     if (!this.heatmapLayer) {
