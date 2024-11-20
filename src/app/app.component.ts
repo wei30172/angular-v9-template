@@ -7,9 +7,4 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'angular-v9-template';
-  sidebarOpen = false;
-
-  toggleSidebar() {
-    this.sidebarOpen = !this.sidebarOpen;
-  }
 }
