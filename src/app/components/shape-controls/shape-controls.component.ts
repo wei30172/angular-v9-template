@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { ObstacleType } from 'src/app/models/obstacle.model';
 
 @Component({
   selector: 'app-shape-controls',
@@ -6,17 +7,17 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
   styleUrls: ['./shape-controls.component.scss']
 })
 export class ShapeControlsComponent {
-  @Input() selectedShape: string
-  @Output() shapeSelected = new EventEmitter<string>();
+  @Input() currentType: string
+  @Output() shapeSelected = new EventEmitter<ObstacleType>();
 
   shapes = [
-    { name: 'rectangle', shapeClass: 'rectangle' },
-    { name: 'ellipse', shapeClass: 'ellipse' },
-    { name: 'triangle', shapeClass: 'triangle' },
-    { name: 'trapezoid', shapeClass: 'trapezoid' }
+    { name: ObstacleType.Rectangle, shapeClass: 'rectangle' },
+    { name: ObstacleType.Ellipse, shapeClass: 'ellipse' },
+    { name: ObstacleType.Triangle, shapeClass: 'triangle' },
+    { name: ObstacleType.Trapezoid, shapeClass: 'trapezoid' }
   ];
 
-  selectShape(shape: string) {
+  selectShape(shape: ObstacleType) {
     this.shapeSelected.emit(shape);
   }
 }

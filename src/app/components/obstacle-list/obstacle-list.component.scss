@@ -45,9 +45,28 @@
           width: 20px;
           height: 20px;
           margin-right: 12px;
-          border-radius: 4px;
-          border: 1px solid #999;
           cursor: pointer;
+        
+          &.rectangle-shape {
+            border-radius: 2px;
+          }
+        
+          &.ellipse-shape {
+            border-radius: 50%;
+          }
+        
+          &.triangle-shape {
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 20px solid transparent;
+            background: none;
+          }
+        
+          &.trapezoid-shape {
+            clip-path: polygon(25% 0, 75% 0, 100% 100%, 0% 100%);
+          }
         }
 
         .obstacle-label {

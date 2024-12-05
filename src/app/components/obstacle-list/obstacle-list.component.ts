@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { Obstacle } from 'src/app/models/obstacle.model';
+import { Obstacle, ObstacleType } from 'src/app/models/obstacle.model';
 
 @Component({
   selector: 'app-obstacle-list',
@@ -11,6 +11,8 @@ export class ObstacleListComponent {
   @Output() selectObstacle = new EventEmitter<string>();
   @Output() deleteObstacle = new EventEmitter<string>();
 
+  ObstacleType = ObstacleType;
+  
   onSelectObstacle(id: string) {
     this.selectObstacle.emit(id);
   }

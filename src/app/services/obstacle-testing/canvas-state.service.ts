@@ -6,8 +6,8 @@ export enum CanvasState {
   Transforming = 'Transforming', // Currently transforming a obstacle
 }
 
-// Class to manage the current state of the canvas
-export class CanvasStateManager {
+// Class to service the current state of the canvas
+export class CanvasStateService {
   // Initialize the canvas state to 'Idle'
   private currentState: CanvasState = CanvasState.Idle;
 

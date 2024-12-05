@@ -1,4 +1,9 @@
 <label class="toggle-layer">
-  <input type="checkbox" [checked]="layer.visible()" (change)="onToggleVisibility(layer)" />
-  Show {{ name }}
+  <input 
+    type="checkbox" 
+    [checked]="layer.visible()" 
+    [disabled]="disabled" 
+    (change)="onToggleVisibility(layer)" 
+  />
+  Show {{ label }}
 </label>

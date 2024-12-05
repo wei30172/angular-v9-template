@@ -3,7 +3,7 @@
     *ngFor="let shape of shapes"
     class="shape-btn"
     (click)="selectShape(shape.name)"
-    [ngClass]="{ selected: selectedShape === shape.name }"
+    [ngClass]="{ selected: currentType === shape.name }"
   >
     <div class="shape" [ngClass]="shape.shapeClass"></div>
   </button>

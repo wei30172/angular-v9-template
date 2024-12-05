@@ -1,12 +1,11 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { KonvaCanvasService } from '../obstacle-testing/konva-canvas.service';
 
 const TooltipDefaults = {
   offset: 10,
   position: 'bottom' as PositionType,
   theme: 'dark' as ThemeType,
-  throttleDelay: 100,
+  throttleDelay: 50,
   scale: 1,
   pan: 0
 };
@@ -20,6 +19,16 @@ export interface TargetBounds {
 
 export type PositionType = 'top' | 'bottom' | 'left' | 'right'
 export type ThemeType = 'light' | 'dark' | 'custom' | 'success' | 'warning' | 'error' | 'info'
+
+interface PositionInfo {
+  top: number;
+  left: number;
+  alternate: PositionType;
+}
+
+type Positions = {
+  [key in PositionType]: PositionInfo;
+};
 
 interface TooltipConfig {
   title: string;
@@ -36,8 +45,7 @@ interface TooltipConfig {
   providedIn: 'root',
 })
 export class TooltipService {
-  constructor(private konvaCanvasService: KonvaCanvasService) {}
-  
+
   // BehaviorSubject to manage tooltip data
   private tooltipSubject = new BehaviorSubject<{
     title: string;
@@ -81,9 +89,6 @@ export class TooltipService {
       theme = TooltipDefaults.theme,
       throttleDelay = TooltipDefaults.throttleDelay,
     } = config;
-    
-    // Get canvas state
-    const { scale, panX, panY } = this.konvaCanvasService.getCanvasState();
 
     // Skip execution if throttling is active
     if (this.isThrottling) return;
@@ -97,9 +102,6 @@ export class TooltipService {
       container,
       offset,
       position,
-      scale,
-      panX,
-      panY
     );
     
     this.tooltipSubject.next({
@@ -109,34 +111,6 @@ export class TooltipService {
       theme,
       targetBounds,
       container
-    });
-  }
-
-  // Update tooltip position
-  updateTooltipPosition() {
-    const currentTooltip = this.tooltipSubject.getValue();
-    if (!currentTooltip) return;
-
-    const { targetBounds, container } = currentTooltip as TooltipConfig;
-    if (!targetBounds || !container) return;
-
-    // Get canvas state
-    const { scale, panX, panY } = this.konvaCanvasService.getCanvasState();
-
-    const newPosition = this.calculatePosition(
-      targetBounds,
-      container,
-      TooltipDefaults.offset, // Default offset
-      TooltipDefaults.position, // Default position
-      scale,
-      panX,
-      panY
-    );
-
-    // Update the position in the current tooltip data
-    this.tooltipSubject.next({
-      ...currentTooltip,
-      style: newPosition,
     });
   }
   
@@ -158,57 +132,207 @@ export class TooltipService {
     container: HTMLElement | HTMLCanvasElement,
     offset: number,
     position: 'top' | 'bottom' | 'left' | 'right',
-    scale: number = TooltipDefaults.scale,
-    panX: number = TooltipDefaults.pan,
-    panY: number = TooltipDefaults.pan
+  ) {
+    // Get the position and size of the target and container
+    const {
+      containerRect,
+      targetTop,
+      targetLeft,
+      width,
+      height
+    } = this.getTargetAndContainerPositions(targetBounds, container);
+  
+    // Get possible positions for the Tooltip
+    const positions = this.getTooltipPositions(targetTop, targetLeft, width, height, offset);
+
+    // Choose the best position
+    const finalPosition = this.getBestPosition(
+      position,
+      positions,
+      containerRect,
+      targetTop,
+      targetLeft,
+      width,
+      height
+    );
+
+    const chosenPosition = positions[finalPosition];
+  
+    // Adjust the position to stay within the container
+    const adjustedPosition = this.adjustPositionWithinContainer(chosenPosition, containerRect);
+  
+    // Return the final Tooltip position style
+    return adjustedPosition;
+  }
+
+  // Recalculate the tooltip position with updated dimensions
+  updateTooltipPosition() {
+    const tooltipData = this.tooltipSubject.getValue();
+    if (tooltipData) {
+      const updatedStyle = this.calculatePosition(
+        tooltipData.targetBounds,
+        tooltipData.container,
+        TooltipDefaults.offset,
+        TooltipDefaults.position
+      );
+
+      this.tooltipSubject.next({
+        ...tooltipData,
+        style: updatedStyle
+      });
+    }
+  }
+
+  // Get the position and size of the target and container
+  private getTargetAndContainerPositions(
+    targetBounds: TargetBounds,
+    container: HTMLElement | HTMLCanvasElement
   ) {
     // Get container boundaries to calculate tooltip placement
     const containerRect = container.getBoundingClientRect();
     const { x = 0, y = 0, width = 0, height = 0 } = targetBounds;
   
-    // Adjust obstacle's position and size by scale and pan
-    const scaledX = x * scale + panX;
-    const scaledY = y * scale + panY;
-    const scaledWidth = width * scale;
-    const scaledHeight = height * scale;
-
-    // Calculate obstacle's absolute position on the container
-    const obstacleTop = scaledY + containerRect.top;
-    const obstacleLeft = scaledX + containerRect.left;
+    // Calculate the absolute position of the target in the container
+    const targetTop = y + containerRect.top;
+    const targetLeft = x + containerRect.left;
   
-    // Define tooltip positions for each direction with fallback options
-    const positions = {
-      top: { top: obstacleTop - this.tooltipHeight - offset, left: obstacleLeft, alternate: 'bottom' },
-      bottom: { top: obstacleTop + scaledHeight + offset, left: obstacleLeft, alternate: 'top' },
-      left: { top: obstacleTop + scaledHeight / 2 - this.tooltipHeight / 2, left: obstacleLeft - this.tooltipWidth - offset, alternate: 'right' },
-      right: { top: obstacleTop + scaledHeight / 2 - this.tooltipHeight / 2, left: obstacleLeft + scaledWidth + offset, alternate: 'left' }
+    return {
+      containerRect,
+      targetTop,
+      targetLeft,
+      width,
+      height
     };
-    
-    // Check if the position is out of container bounds
-    const isOutOfBounds = (pos: 'top' | 'bottom' | 'left' | 'right') => {
-      const { top, left } = positions[pos];
-      return (pos === 'top' && top < containerRect.top) ||
-             (pos === 'bottom' && top + this.tooltipHeight > containerRect.bottom) ||
-             (pos === 'left' && left < containerRect.left) ||
-             (pos === 'right' && left + this.tooltipWidth > containerRect.right);
+  }
+
+  // Get possible positions for the Tooltip
+  private getTooltipPositions(
+    targetTop: number,
+    targetLeft: number,
+    width: number,
+    height: number,
+    offset: number
+  ): Positions {
+    return {
+      // Define positions for tooltip
+      top: {
+        top: targetTop - this.tooltipHeight - offset,
+        left: targetLeft + width / 2 - this.tooltipWidth / 2,
+        alternate: 'bottom',
+      },
+      bottom: {
+        top: targetTop + height + offset,
+        left: targetLeft + width / 2 - this.tooltipWidth / 2,
+        alternate: 'top',
+      },
+      left: {
+        top: targetTop + height / 2 - this.tooltipHeight / 2,
+        left: targetLeft - this.tooltipWidth - offset,
+        alternate: 'right',
+      },
+      right: {
+        top: targetTop + height / 2 - this.tooltipHeight / 2,
+        left: targetLeft + width + offset,
+        alternate: 'left',
+      },
     };
+  }
 
-    // Determine the best position by checking boundaries
-    const finalPosition = isOutOfBounds(position) ? positions[position].alternate : position;
-    const chosenPosition = positions[finalPosition];
+  // Choose the best position
+  private getBestPosition(
+    position: PositionType,
+    positions: Positions,
+    containerRect: DOMRect,
+    targetTop: number,
+    targetLeft: number,
+    width: number,
+    height: number
+  ): PositionType {
+    const isPositionOutOfBounds = (pos: PositionType) =>
+      this.isOutOfBounds(pos, positions, containerRect);
+    const isPositionOverlappingTarget = (pos: PositionType) =>
+      this.isOverlappingTarget(positions[pos], targetTop, targetLeft, width, height);
+  
+    // Choose the best position based on bounds
+    let finalPosition = position;
+    if (isPositionOutOfBounds(position) || isPositionOverlappingTarget(position)) {
+      finalPosition = positions[position].alternate as PositionType;
 
-    // Adjust top and left values to stay within container bounds
+      if (isPositionOutOfBounds(finalPosition) || isPositionOverlappingTarget(finalPosition)) {
+        const alternativePositions: PositionType[] = ['top', 'bottom', 'left', 'right'];
+        
+        for (const pos of alternativePositions) {
+          if (!isPositionOutOfBounds(pos) && !isPositionOverlappingTarget(pos)) {
+            finalPosition = pos;
+            break;
+          }
+        }
+      }
+    }
+    return finalPosition;
+  }
+
+  // Check if the tooltip position is outside the container bounds
+  private isOutOfBounds(
+    pos: PositionType,
+    positions: Positions,
+    containerRect: DOMRect
+  ): boolean {
+    const { top, left } = positions[pos];
+    return (
+      (pos === 'top' && top < containerRect.top) ||
+      (pos === 'bottom' && top + this.tooltipHeight > containerRect.bottom) ||
+      (pos === 'left' && left < containerRect.left) ||
+      (pos === 'right' && left + this.tooltipWidth > containerRect.right)
+    );
+  }
+
+  // Detect whether the tooltip will overwrite the target element
+  private isOverlappingTarget(
+    pos: { top: number; left: number },
+    targetTop: number,
+    targetLeft: number,
+    width: number,
+    height: number
+  ): boolean {
+    const tooltipRect = {
+      top: pos.top,
+      left: pos.left,
+      bottom: pos.top + this.tooltipHeight,
+      right: pos.left + this.tooltipWidth,
+    };
+  
+    const targetRect = {
+      top: targetTop,
+      left: targetLeft,
+      bottom: targetTop + height,
+      right: targetLeft + width,
+    };
+  
+    return !(
+      tooltipRect.right <= targetRect.left ||
+      tooltipRect.left >= targetRect.right ||
+      tooltipRect.bottom <= targetRect.top ||
+      tooltipRect.top >= targetRect.bottom
+    );
+  }
+  
+  // Adjust the position to stay within the container
+  private adjustPositionWithinContainer(
+    position: { top: number; left: number },
+    containerRect: DOMRect
+  ): { top: string; left: string } {
+    // Adjust position to keep tooltip within container
     const adjustedLeft = Math.max(
-      containerRect.left, 
-      Math.min(chosenPosition.left, containerRect.right - this.tooltipWidth)
+      containerRect.left,
+      Math.min(position.left, containerRect.right - this.tooltipWidth)
     ) + 'px';
   
     const adjustedTop = Math.max(
-      containerRect.top, 
-      Math.min(chosenPosition.top, containerRect.bottom - this.tooltipHeight)
+      containerRect.top,
+      Math.min(position.top, containerRect.bottom - this.tooltipHeight)
     ) + 'px';
-
-    // Return final tooltip position style
+  
     return { top: adjustedTop, left: adjustedLeft };
   }
 }

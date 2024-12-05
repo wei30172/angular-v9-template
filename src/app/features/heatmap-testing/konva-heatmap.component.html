@@ -14,8 +14,9 @@
   <!-- Toggle Layer -->
   <app-toggle-layer
     *ngFor="let layer of layers"
-    [name]="layer.name"
+    [label]="layer.label"
     [layer]="layer.layer"
+    [disabled]="layer.name === 'hover' && !isHeatmapLayerVisible()"
     (toggleVisibility)="toggleLayerVisibility($event)">
   </app-toggle-layer>
 </div>
@@ -39,7 +40,7 @@
 
   <!-- Layer List -->
   <app-layer-list
-    [layers]="layers"
+    [layers]="filteredLayers"
     (moveLayerToTop)="moveLayerToTop($event)" 
     (toggleVisibility)="toggleLayerVisibility($event)">
   </app-layer-list>

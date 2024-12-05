@@ -2,7 +2,7 @@
   <h3>Layer List: {{ layers.length }}</h3>
   <ul>
     <li *ngFor="let layerItem of layers">
-      <span>{{ layerItem.name }}</span>
+      <span>{{ layerItem.label }}</span>
       <div class="layer-btn">
         <button class="toggle-btn" (click)="onToggleVisibility(layerItem.layer)">
           {{ layerItem.layer.visible() ? 'On' : 'Off' }}

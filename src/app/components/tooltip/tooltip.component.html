@@ -6,10 +6,10 @@
   (mouseleave)="hideTooltip()"
 >
   
-    <div class="tooltip-header">
-      <div *ngIf="tooltipData.title" class="tooltip-title">{{ tooltipData.title }}</div>
-      <button (click)="closeTooltip()" class="close-btn">✖</button>
-    </div>
+  <div class="tooltip-header">
+    <div *ngIf="tooltipData.title" class="tooltip-title">{{ tooltipData.title }}</div>
+    <button (click)="closeTooltip()" class="close-btn">✖</button>
+  </div>
   
   <div class="tooltip-description-wrapper">
     <span *ngIf="tooltipData.description && !isExpanded" 

@@ -7,7 +7,7 @@ import Konva from 'konva';
   styleUrls: ['./layer-list.component.scss']
 })
 export class LayerListComponent {
-  @Input() layers: { name: string; layer: Konva.Layer; isTop: boolean }[] = [];
+  @Input() layers: { name: string; label:string, layer: Konva.Layer; isTop: boolean }[] = [];
   @Output() moveLayerToTop = new EventEmitter<Konva.Layer>();
   @Output() toggleVisibility = new EventEmitter<Konva.Layer>();
 

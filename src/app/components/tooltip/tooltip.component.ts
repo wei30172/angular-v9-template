@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, ViewEncapsulation } from '@angular/core';
 import { ThemeType, TooltipService } from 'src/app/services/shared/tooltip.service';
 import { Observable } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -7,6 +7,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   selector: 'app-tooltip',
   templateUrl: './tooltip.component.html',
   styleUrls: ['./tooltip.component.scss'],
+  encapsulation: ViewEncapsulation.None, // Makes styles global across the application
 })
 export class TooltipComponent implements OnInit {
   @ViewChild('tooltip', { static: false }) tooltipElement!: ElementRef<HTMLDivElement>;
@@ -31,12 +32,11 @@ export class TooltipComponent implements OnInit {
     // Subscribe to tooltip$ changes
     this.tooltip$.subscribe((tooltipData) => {
       if (tooltipData) {
-        // Delay to ensure the tooltip is rendered
+        // Ensure the tooltip is rendered
         setTimeout(() => {
           if (this.tooltipElement) {
             const tooltipRect = this.tooltipElement.nativeElement.getBoundingClientRect();
             this.tooltipService.setTooltipDimensions(tooltipRect.width, tooltipRect.height);
-            // console.log('Tooltip dimensions:', tooltipRect.width, tooltipRect.height);
           }
         });
       }
@@ -47,6 +47,15 @@ export class TooltipComponent implements OnInit {
   toggleDescription() {
     this.isExpanded = !this.isExpanded;
     this.tooltipService.setIsPinned(this.isExpanded);
+
+    // Ensure the tooltip is rendered
+    setTimeout(() => {
+      if (this.tooltipElement) {
+        const tooltipRect = this.tooltipElement.nativeElement.getBoundingClientRect();
+        this.tooltipService.setTooltipDimensions(tooltipRect.width, tooltipRect.height);
+      }
+      this.tooltipService.updateTooltipPosition();
+    });
   }
 
   // Hide the tooltip
@@ -66,15 +75,20 @@ export class TooltipComponent implements OnInit {
     const buildHtml = (data: unknown): string => {
       if (Array.isArray(data)) {
         // If data is an array, render it as a list
-        return `<ul>${data.map(item => `<li>${buildHtml(item)}</li>`).join('')}</ul>`;
+        return `<ul class="tooltip-list">${data.map(
+          item => `<li class="tooltip-list-item">${buildHtml(item)}</li>`
+        ).join('')}</ul>`;
       } else if (data && typeof data === "object" && data !== null) {
         // If data is an object, render its entries as key-value pairs
         return `<div>${Object.entries(data).map(
-          ([key, value]) => `<div><strong>${key}:</strong> ${buildHtml(value)}</div>`
+          ([key, value]) =>
+            `<div class="tooltip-key-value">
+              <strong>${key}:</strong> <span>${buildHtml(value)}</span>
+            </div>`
         ).join('')}</div>`;
       } else {
         // If data is a basic type, convert it to a string and render it
-        return String(data);
+        return `<span class="tooltip-text">${String(data)}</span>`;
       }
     };
   

@@ -1,5 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
+import { ObstacleType } from 'src/app/models/obstacle.model';
+import { ObstacleFormService } from 'src/app/services/obstacle-testing//obstacle-form.service';
 
 @Component({
   selector: 'app-edit-form',
@@ -7,21 +9,37 @@ import { FormGroup } from '@angular/forms';
   styleUrls: ['./edit-form.component.scss']
 })
 export class EditFormComponent {
-  @Input() formGroup: FormGroup;
-  @Output() close = new EventEmitter<void>();
-  @Output() submit = new EventEmitter<void>();
-  @Output() reset = new EventEmitter<void>();
+  @Input() shapeType: ObstacleType;
 
-  onClose() {
-    this.close.emit();
+  ObstacleType = ObstacleType;
+  formGroup: FormGroup;
+  maxSpaceHeight: number;
+  
+  constructor(
+    public obstacleFormService: ObstacleFormService
+  ) {
+    this.formGroup = this.obstacleFormService.getFormGroup();
+    this.maxSpaceHeight = this.obstacleFormService.getMaxSpaceHeight();
   }
 
+  // Confirm changes
   onSubmit() {
-    this.submit.emit();
+    this.obstacleFormService.submitForm();
   }
 
-  onReset() {
-    this.reset.emit();
+  // Hide and clear the form
+  onClose() {
+    this.obstacleFormService.closeForm();
+  }
+
+  // Restore the form
+  onRestore() {
+    this.obstacleFormService.restoreForm();
+  }
+
+  // Trigger validation on blur
+  onBlur() {
+    this.obstacleFormService.validateOnBlur();
   }
 
   onDragStart(event: MouseEvent) {

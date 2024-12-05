@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import Konva from 'konva';
 
 enum CanvasSettings {
-  MinZoom = 0.2,
-  MaxZoom = 20,
+  MinZoom = 1,
+  MaxZoom = 10,
   PanOffset = 20,
   ScaleBy = 1.05,
 }
@@ -18,6 +18,7 @@ export class KonvaCanvasService {
   private obstacleLayer: Konva.Layer | null = null;
   private heatmapLayer: Konva.Layer | null = null;
   private gridLayer: Konva.Layer | null = null;
+  private hoverLayer: Konva.Layer | null = null;
   private transformer: Konva.Transformer | null = null;
   
   // Default constants
@@ -39,18 +40,20 @@ export class KonvaCanvasService {
     this.obstacleLayer = new Konva.Layer();
     this.heatmapLayer = new Konva.Layer();
     this.gridLayer = new Konva.Layer();
+    this.hoverLayer = new Konva.Layer();
 
     // Add layers to the stage
-    this.stage.add(this.backgroundLayer);
-    this.stage.add(this.gridLayer);
-    this.stage.add(this.heatmapLayer);
-    this.stage.add(this.obstacleLayer);
+    const layerOrder = new Map<Konva.Layer, number>([
+      [this.backgroundLayer, 0],
+      [this.gridLayer, 1],
+      [this.hoverLayer, 2],
+      [this.heatmapLayer, 3],
+      [this.obstacleLayer, 4],
+    ]);
 
-    // Set layer order
-    // backgroundLayer -> gridLayer -> heatmapLayer -> obstacleLayer
-    this.gridLayer.moveToBottom();
-    this.backgroundLayer.moveToBottom();
-    this.heatmapLayer.moveDown();
+    Array.from(layerOrder.entries())
+      .sort((a, b) => a[1] - b[1])
+      .forEach(([layer]) => this.stage.add(layer));
 
     // Initialize obstacle layer with transparent background
     this.initializeObstacleLayer();
@@ -66,6 +69,8 @@ export class KonvaCanvasService {
 
     // Create grid
     this.createGridLayer(gridSize);
+
+    this.stage.batchDraw();
   }
 
   // Get the Konva stage instance
@@ -91,6 +96,11 @@ export class KonvaCanvasService {
   // Get the grid layer
   getGridLayer(): Konva.Layer | null {
     return this.gridLayer;
+  }
+
+  // Get the hover layer
+  getHoverLayer(): Konva.Layer | null {
+    return this.hoverLayer;
   }
   
   // Get the obstacle transformer
@@ -267,8 +277,8 @@ export class KonvaCanvasService {
       x: pointer.x - mousePointTo.x * newZoom,
       y: pointer.y - mousePointTo.y * newZoom,
     };
-
-    this.stage.position(newPos);
+    
+    this.constrainStagePosition(newPos, newZoom);
     this.stage.batchDraw();
   }
 
@@ -282,7 +292,7 @@ export class KonvaCanvasService {
   }
 
   // Adjust the zoom level
-  adjustZoom(
+  adjustZoom (
     factor: number,
     minZoom: number = CanvasSettings.MinZoom,
     maxZoom: number = CanvasSettings.MaxZoom
@@ -290,11 +300,11 @@ export class KonvaCanvasService {
     if (!this.stage) return;
 
     let zoomLevel = this.stage.scaleX();
-    const newZoom = zoomLevel * factor;
+    const newZoom = Math.max(minZoom, Math.min(maxZoom, zoomLevel * factor));
 
-    // Ensure new zoom is within the defined limits
-    if (newZoom > maxZoom || newZoom < minZoom) return;
     this.stage.scale({ x: newZoom, y: newZoom });
+    const currentPosition = this.stage.position();
+    this.constrainStagePosition(currentPosition, newZoom);
     this.stage.batchDraw();
   }
 
@@ -306,10 +316,13 @@ export class KonvaCanvasService {
     const offsetX = directionX * CanvasSettings.PanOffset;
     const offsetY = directionY * CanvasSettings.PanOffset;
 
-    this.stage.position({
+    const newPosition = {
       x: this.stage.x() + offsetX,
-      y: this.stage.y() + offsetY
-    });
+      y: this.stage.y() + offsetY,
+    };
+
+    const currentZoom = this.stage.scaleX();
+    this.constrainStagePosition(newPosition, currentZoom);
     this.stage.batchDraw();
   }
 
@@ -319,6 +332,32 @@ export class KonvaCanvasService {
     const scale = this.stage.scaleX();
     const { x: panX, y: panY } = this.stage.position();
     return { scale, panX, panY };
+  }
+  
+  // Constrain stage position to prevent leaving empty space
+  private constrainStagePosition(position: { x: number; y: number }, zoom: number) {
+    if (!this.stage) return;
+
+    const stageWidth = this.stage.width();
+    const stageHeight = this.stage.height();
+
+    const scaledWidth = stageWidth * zoom;
+    const scaledHeight = stageHeight * zoom;
+
+    const containerWidth = this.stage.container().offsetWidth;
+    const containerHeight = this.stage.container().offsetHeight;
+
+    // Ensure the stage doesn't leave white space
+    const minX = Math.min(0, containerWidth - scaledWidth);
+    const maxX = 0;
+
+    const minY = Math.min(0, containerHeight - scaledHeight);
+    const maxY = 0;
+
+    const constrainedX = Math.max(minX, Math.min(maxX, position.x));
+    const constrainedY = Math.max(minY, Math.min(maxY, position.y));
+
+    this.stage.position({ x: constrainedX, y: constrainedY });
   }
 
   // Add heatmap layer
@@ -346,6 +385,72 @@ export class KonvaCanvasService {
     };
   }
   
+  // Create a hover target (circle or cross) and add to hover layer
+  createHoverTarget(
+    type: 'circle' | 'cross' = 'cross', // Default to 'cross'
+    options?: {
+      radius?: number;
+      color?: string;
+      lineWidth?: number;
+      visible?: boolean;
+    }
+  ): Konva.Node {
+    if (!this.hoverLayer) {
+      throw new Error('Hover layer is not initialized.');
+    }
+
+    const {
+      radius = 10, // Default radius for target
+      color = 'rgba(255, 0, 0, 0.9)', // Default color
+      lineWidth = 1, // Default line width for cross
+      visible = false, // Default visibility
+    } = options || {};
+
+    let hoverTarget: Konva.Group | Konva.Circle;
+
+    if (type === 'circle') {
+      // Create a circle for the hover target
+      hoverTarget = new Konva.Circle({
+        x: 0,
+        y: 0,
+        radius,
+        fill: color,
+        visible,
+        listening: false, // Prevent event capturing
+      });
+    } else if (type === 'cross') {
+      // Create a cross for the hover target
+      const horizontalLine = new Konva.Line({
+        points: [-radius, 0, radius, 0], // Horizontal line
+        stroke: color,
+        strokeWidth: lineWidth,
+      });
+      const verticalLine = new Konva.Line({
+        points: [0, -radius, 0, radius], // Vertical line
+        stroke: color,
+        strokeWidth: lineWidth,
+      });
+
+      hoverTarget = new Konva.Group({
+        x: 0,
+        y: 0,
+        visible,
+        listening: false, // Prevent event capturing
+      });
+
+      hoverTarget.add(horizontalLine);
+      hoverTarget.add(verticalLine);
+    } else {
+      return // Invalid hover target type. Use "circle" or "cross".
+    }
+
+    // Add the hover target to the hover layer
+    this.hoverLayer.add(hoverTarget);
+    this.hoverLayer.draw();
+
+    return hoverTarget; // Return the hover target for external control
+  }
+
   // Clear stage and layers
   clearStageAndLayers() {
     if (this.stage) {
@@ -366,6 +471,7 @@ export class KonvaCanvasService {
     this.obstacleLayer = null;
     this.heatmapLayer = null;
     this.gridLayer = null;
+    this.hoverLayer = null;
     this.transformer = null;
   }
 }

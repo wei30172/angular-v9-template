@@ -1,7 +1,7 @@
 <div class="controls-container">
   <!-- Shape Controls -->
   <app-shape-controls
-    [selectedShape]="selectedShape"
+    [currentType]="currentType"
     (shapeSelected)="onShapeSelected($event)"
   ></app-shape-controls>
 
@@ -25,13 +25,6 @@
 </div>
 
 <div class="canvas-container">
-  <!-- Delete Icon -->
-  <app-delete-icon 
-    *ngIf="showDeleteIcon" 
-    [deleteIconStyle]="deleteIconStyle" 
-    [obstacleId]="currentId" 
-    (deleteObstacle)="deleteObstacle($event)">
-  </app-delete-icon>
 
   <!-- Konva Canvas -->
   <div
@@ -55,10 +48,4 @@
 <app-popup-overlay *ngIf="isFormVisible" (close)="closeEditForm()"></app-popup-overlay>
 
 <!-- Edit Form Component -->
-<app-edit-form
-  *ngIf="isFormVisible"
-  [formGroup]="obstacleForm"
-  (close)="closeEditForm()"
-  (submit)="submitEditForm()"
-  (reset)="cancelEditForm()"
-></app-edit-form>
+<app-edit-form *ngIf="isFormVisible" [shapeType]="currentType"></app-edit-form>

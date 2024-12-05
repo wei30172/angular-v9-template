@@ -1,33 +1,179 @@
 <div class="edit-form" (mousedown)="onDragStart($event)">
   <button class="close-button" (click)="onClose()">&times;</button>
   <h3>Edit Obstacle</h3>
-  <form [formGroup]="formGroup">
+  <form *ngIf="formGroup" [formGroup]="formGroup">
     <div class="form-group">
       <label for="x">X Position:</label>
       <input type="number" formControlName="x" />
+      <div *ngIf="formGroup.get('x')?.invalid && formGroup.get('x')?.touched" class="error-message">
+        <small *ngIf="formGroup.get('x')?.errors?.required">X position is required.</small>
+        <small *ngIf="formGroup.get('x')?.errors?.pattern">X position must be a non-negative integer.</small>
+      </div>
     </div>
+    
     <div class="form-group">
       <label for="y">Y Position:</label>
       <input type="number" formControlName="y" />
+      <div *ngIf="formGroup.get('y')?.invalid && formGroup.get('y')?.touched" class="error-message">
+        <small *ngIf="formGroup.get('y')?.errors?.required">Y position is required.</small>
+        <small *ngIf="formGroup.get('y')?.errors?.pattern">Y position must be a non-negative integer.</small>
+      </div>
     </div>
+
     <div class="form-group">
-      <label for="width">Width:</label>
-      <input type="number" formControlName="width" />
+      <label for="color">Color: {{ formGroup.get('color')?.value }}</label>
+      <input type="color" formControlName="color" />
+      <div *ngIf="formGroup.get('color')?.invalid && formGroup.get('color')?.touched" class="error-message">
+        <small *ngIf="formGroup.get('color')?.errors?.required">Color is required.</small>
+        <small *ngIf="formGroup.get('color')?.errors?.pattern">Color must be a valid hex code (e.g., #RRGGBB).</small>
+      </div>
     </div>
+
     <div class="form-group">
-      <label for="height">Height:</label>
-      <input type="number" formControlName="height" />
+      <label for="rotation">Rotation (degrees):</label>
+      <input type="number" formControlName="rotation" />
+      <div *ngIf="formGroup.get('rotation')?.invalid && formGroup.get('rotation')?.touched" class="error-message">
+        <small *ngIf="formGroup.get('rotation')?.errors?.required">Rotation is required.</small>
+        <small *ngIf="formGroup.get('rotation')?.errors?.pattern">Rotation must be between -360 and 360 degrees.</small>
+      </div>
     </div>
+
     <div class="form-group">
-      <label for="color">Color:</label>
-      <input type="text" formControlName="color" />
+      <label for="zHeight">Z Height (1 - {{ maxSpaceHeight - formGroup.get('startHeight')?.value || 0 }}):</label>
+      <input type="number" formControlName="zHeight" (blur)="onBlur()"/>
+      <div *ngIf="formGroup.get('zHeight')?.invalid && formGroup.get('zHeight')?.touched" class="error-message">
+        <small *ngIf="formGroup.get('zHeight')?.errors?.required">Z Height is required.</small>
+        <small *ngIf="formGroup.get('zHeight')?.errors?.pattern">
+          Z Height must be between 1 and {{ maxSpaceHeight }}.
+        </small>
+      </div>
+      <div *ngIf="formGroup.hasError('exceedsMaxSpaceHeight')" class="error-message">
+        <small>
+          Total Z Height and Start Height cannot exceed {{ maxSpaceHeight }}.
+        </small>
+      </div>
     </div>
+    
+    <div class="form-group">
+      <label for="startHeight">Start Height (0 - {{ maxSpaceHeight - formGroup.get('zHeight')?.value || 0 }}):</label>
+      <input type="number" formControlName="startHeight" (blur)="onBlur()"/>
+      <div *ngIf="formGroup.get('startHeight')?.invalid && formGroup.get('startHeight')?.touched" class="error-message">
+        <small *ngIf="formGroup.get('startHeight')?.errors?.required">Start Height is required.</small>
+        <small *ngIf="formGroup.get('startHeight')?.errors?.pattern">
+          Start Height must be between 0 and {{ maxSpaceHeight }}
+        </small>
+      </div>
+      <div *ngIf="formGroup.hasError('exceedsMaxSpaceHeight')" class="error-message">
+        <small>
+          Total Z Height and Start Height cannot exceed {{ maxSpaceHeight }}.
+        </small>
+      </div>
+    </div>
+    
+    <!-- RectangleObstacle -->
+    <ng-container *ngIf="shapeType === ObstacleType.Rectangle">
+      <div class="form-group">
+        <label for="width">Width:</label>
+        <input type="number" formControlName="width" />
+        <div *ngIf="formGroup.get('width')?.invalid && formGroup.get('width')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('width')?.errors?.required">Width is required.</small>
+          <small *ngIf="formGroup.get('width')?.errors?.pattern">Width must be a positive integer.</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="height">Height:</label>
+        <input type="number" formControlName="height" />
+        <div *ngIf="formGroup.get('height')?.invalid && formGroup.get('height')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('height')?.errors?.required">Height is required.</small>
+          <small *ngIf="formGroup.get('height')?.errors?.pattern">Height must be a positive integer.</small>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- EllipseObstacle -->
+    <ng-container *ngIf="shapeType === ObstacleType.Ellipse">
+      <div class="form-group">
+        <label for="radiusX">RadiusX:</label>
+        <input type="number" formControlName="radiusX" />
+        <div *ngIf="formGroup.get('radiusX')?.invalid && formGroup.get('radiusX')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('radiusX')?.errors?.required">RadiusX is required.</small>
+          <small *ngIf="formGroup.get('radiusX')?.errors?.pattern">RadiusX must be a positive integer.</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="radiusY">RadiusY:</label>
+        <input type="number" formControlName="radiusY" />
+        <div *ngIf="formGroup.get('radiusY')?.invalid && formGroup.get('radiusY')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('radiusY')?.errors?.required">RadiusY is required.</small>
+          <small *ngIf="formGroup.get('radiusY')?.errors?.pattern">RadiusY must be a positive integer.</small>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- TriangleObstacle -->
+    <ng-container *ngIf="shapeType === ObstacleType.Triangle">
+      <div class="form-group">
+        <label for="base">Base:</label>
+        <input type="number" formControlName="base" />
+        <div *ngIf="formGroup.get('base')?.invalid && formGroup.get('base')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('base')?.errors?.required">Base is required.</small>
+          <small *ngIf="formGroup.get('base')?.errors?.pattern">Base must be a positive integer.</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="height">Height:</label>
+        <input type="number" formControlName="height" />
+        <div *ngIf="formGroup.get('height')?.invalid && formGroup.get('height')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('height')?.errors?.required">Height is required.</small>
+          <small *ngIf="formGroup.get('height')?.errors?.pattern">Height must be a positive integer.</small>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- TrapezoidObstacle -->
+    <ng-container *ngIf="shapeType === ObstacleType.Trapezoid">
+      <div class="form-group">
+        <label for="topWidth">Top Width:</label>
+        <input type="number" formControlName="topWidth" />
+        <div *ngIf="formGroup.get('topWidth')?.invalid && formGroup.get('topWidth')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('topWidth')?.errors?.required">Top width is required.</small>
+          <small *ngIf="formGroup.get('topWidth')?.errors?.pattern">Top width must be a positive integer.</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bottomWidth">Bottom Width:</label>
+        <input type="number" formControlName="bottomWidth" />
+        <div *ngIf="formGroup.get('bottomWidth')?.invalid && formGroup.get('bottomWidth')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('bottomWidth')?.errors?.required">Bottom width is required.</small>
+          <small *ngIf="formGroup.get('bottomWidth')?.errors?.pattern">Bottom width must be a positive integer.</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="height">Height:</label>
+        <input type="number" formControlName="height" />
+        <div *ngIf="formGroup.get('height')?.invalid && formGroup.get('height')?.touched" class="error-message">
+          <small *ngIf="formGroup.get('height')?.errors?.required">Height is required.</small>
+          <small *ngIf="formGroup.get('height')?.errors?.pattern">Height must be a positive integer.</small>
+        </div>
+      </div>
+    </ng-container>
+    
     <div class="form-group">
       <input type="hidden" formControlName="id">
     </div>
+    <div class="form-group">
+      <input type="hidden" formControlName="shapeType">
+    </div>
+    
+    
     <div class="button-group">
-      <button type="button" (click)="onReset()">Reset</button>
-      <button type="button" (click)="onSubmit()">Confirm</button>
+      <button type="button" (click)="onRestore()">Restore</button>
+      <button type="button" (click)="onSubmit()" [disabled]="!formGroup.valid">Confirm</button>
     </div>
   </form>
 </div>

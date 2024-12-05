@@ -3,14 +3,15 @@ import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged } from 'rxjs/operators';
 import Konva from 'konva';
 
+import { ShapeMapping, ObstacleShapeManager } from 'src/app/services/obstacle-testing/shape-service/obstacle-shape-manager';
 import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
 import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
 import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
-import { TargetBounds, TooltipService } from 'src/app/services/shared/tooltip.service';
+import { TooltipService } from 'src/app/services/shared/tooltip.service';
+import { Obstacle } from 'src/app/models/obstacle.model';
 import { HeatmapDataService } from 'src/app/services/heatmap-testing/heatmap-data.service';
 import { SimpleheatService } from 'src/app/services/heatmap-testing/simpleheat.service';
-import { Obstacle } from 'src/app/models/obstacle.model';
 
 @Component({
   selector: 'app-konva-heatmap',
@@ -26,16 +27,20 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Constants for canvas behavior
   private readonly OBSTACLE_COUNT = 20;
+  private readonly HOVER_RADIUS = 1;
   
   layers = [];
 
   private stage: Konva.Stage;
   private obstacleLayer: Konva.Layer;
   private heatmapLayer: Konva.Layer;
+  private hoverLayer: Konva.Layer;
+  private hoverTarget: Konva.Node;
   private destroy$ = new Subject<void>();
 
   constructor(
-    private obstacleService: ObstacleGenerationService,
+    private obstacleShapeManager: ObstacleShapeManager,
+    private obstacleGenerationService: ObstacleGenerationService,
     private konvaCanvasService: KonvaCanvasService,
     private konvaEventService: KonvaEventService,
     private keyboardEventService: KeyboardEventService,
@@ -51,10 +56,16 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    this.initializeCanvas(); // Initialize canvas and layer
-    this.loadBackgroundImage(); // Load the background image
-    
-    this.obstacleService.generateRandomObstacles( // Generate default obstacles
+    // Initialize canvas and layer
+    this.initializeCanvas();
+    this.initHoverTarget();
+
+    // Load the background image for the canvas
+    this.konvaCanvasService.loadBackgroundImage(
+      'assets/images/floorplan.jpg'
+    );
+    // Generate default obstacles
+    this.obstacleGenerationService.generateRandomObstacles(
       this.OBSTACLE_COUNT,
       this.stage.width(),
       this.stage.height()
@@ -65,7 +76,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.registerKeyboardShortcuts(); // Register keyboard shortcuts with actions
     this.generateAndRenderHeatmap(); // Render heatmap
     
-    // Use setTimeout to defer initialization until after change detection completes
+    // Defer initialization until after change detection completes
     setTimeout(() => {
       this.initializeLayerList(); // Initialize layers list
     });
@@ -97,20 +108,20 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.stage = this.konvaCanvasService.getStage();
     this.obstacleLayer = this.konvaCanvasService.getObstacleLayer();
     this.heatmapLayer = this.konvaCanvasService.getHeatmapLayer();
+    this.hoverLayer = this.konvaCanvasService.getHoverLayer();
   }
 
-  // Load the background image for the canvas
-  private loadBackgroundImage() {
-    this.konvaCanvasService.loadBackgroundImage(
-      'assets/images/floorplan.jpg'
-    );
+  // Initialize the hover target
+  private initHoverTarget() {
+    this.hoverTarget = this.konvaCanvasService.createHoverTarget()
   }
 
   // Initialize layers list after canvas and layers have been set up
   private initializeLayerList() {
     this.layers = [
-      { name: 'Obstacle Layer', layer: this.obstacleLayer, isTop: false },
-      { name: 'Heatmap Layer', layer: this.heatmapLayer, isTop: false }
+      { name: 'obstacle', label: 'Obstacle Layer', layer: this.obstacleLayer, isTop: false },
+      { name: 'heatmap', label: 'Heatmap Layer', layer: this.heatmapLayer, isTop: false },
+      { name: 'hover', label: 'Heat Target', layer: this.hoverLayer, isTop: false },
     ];
     this.updateLayerStatus();
   }
@@ -120,6 +131,36 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.layers.forEach(layerItem => {
       layerItem.isTop = this.konvaCanvasService.isLayerOnTop(layerItem.layer);
     });
+  }
+
+  // Check visibility of heatmapLayer
+  isHeatmapLayerVisible(): boolean {
+    return this.heatmapLayer ? this.heatmapLayer.visible() : false;
+  }
+
+  // Filter out layers with name 'hover'
+  get filteredLayers() {
+    return this.layers.filter(layer => layer.name !== 'hover');
+  }
+
+  // Subscribe to obstacle list from service
+  private subscribeToObstacles() {
+    this.obstacleGenerationService.obstacles$
+      .pipe(
+        takeUntil(this.destroy$),
+        distinctUntilChanged()
+      )
+      .subscribe(obstacles => {
+        this.renderObstacles(obstacles); // Render or update obstacles on the canvas
+      });
+  }
+
+  // Bind the canvas interaction events
+  private bindCanvasEvents() {
+    // Handle mouse leave from canvas
+    this.stage.on('mouseleave', () => this.handleMouseLeave());
+    // Handle zoom in/out using the mouse wheel
+    this.stage.on('wheel', (event: Konva.KonvaEventObject<WheelEvent>) => this.handleMouseWheel(event));
   }
 
   // Listen for global keydown events
@@ -141,7 +182,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
       { keyCombo: '_', action: () => this.adjustZoom(1 / 1.1) },
     ]);
   }
-  
+
   // Generate and render heatmap
   private generateAndRenderHeatmap() {
     // Get the canvas element by the dynamically generated ID
@@ -170,21 +211,33 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.heatmapLayer) {
       this.heatmapLayer.on('mousemove', () => this.handleHeatmapHover());
-      // this.heatmapLayer.on('mouseleave', () => this.tooltipService.hideTooltip());
     }
   }
-  
+
   // Display intensity data on hover
   private handleHeatmapHover() {
     const pointerPosition = this.heatmapLayer.getRelativePointerPosition();
-    if (!pointerPosition) return;
+    if (!pointerPosition) {
+      this.hoverTarget.visible(false);
+      this.tooltipService.destroyTooltip();
+      return;
+    }
     
     const gridX = Math.floor(pointerPosition.x); 
-    const gridY = Math.floor(pointerPosition.y); 
+    const gridY = Math.floor(pointerPosition.y);
+    const radius = this.HOVER_RADIUS
     // console.log({gridX, gridY})
 
+    // Update the position of hoverTarget
+    this.hoverTarget.setAttrs({
+      x: gridX,
+      y: gridY,
+      radius,
+      visible: true,
+    });
+
     // Retrieve the average intensity within the specified radius
-    const averageIntensity = this.heatmapDataService.getAverageIntensityInRadius(gridX, gridY) ?? 0;
+    const averageIntensity = this.heatmapDataService.getAverageIntensityInRadius(gridX, gridY, radius) ?? 0;
 
     const title = `Intensity: ${averageIntensity.toFixed(2)}`;
     const description = { X: gridX, Y: gridY };
@@ -195,17 +248,20 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
         description,
         targetBounds: { x: gridX, y: gridY },
         container: this.stage.container(),
+        offset: 50,
         theme: 'light'
       });
     } else {
-      this.tooltipService.hideTooltip();
+      this.tooltipService.destroyTooltip();
     }
   }
 
-  // Bind the canvas interaction events
-  private bindCanvasEvents() {
-    // Handle zoom in/out using the mouse wheel
-    this.stage.on('wheel', (event: Konva.KonvaEventObject<WheelEvent>) => this.handleMouseWheel(event));
+  // Hide hover target when the mouse leaves the canvas
+  private handleMouseLeave() {
+    if (this.hoverTarget) {
+      this.hoverTarget.visible(false);
+      this.hoverLayer.batchDraw();
+    }
   }
 
   // Handle zooming with the mouse wheel
@@ -213,69 +269,53 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     const wheelEvent = event.evt as WheelEvent;
     wheelEvent.preventDefault();
     this.konvaCanvasService.adjustMouseWheelZoom(wheelEvent);
-    this.tooltipService.updateTooltipPosition();
+    this.tooltipService.destroyTooltip();
   }
 
-  // Subscribe to obstacle updates from the service
-  private subscribeToObstacles() {
-    this.obstacleService.obstacles$
-      .pipe(
-        takeUntil(this.destroy$),
-        distinctUntilChanged()
-      )
-      .subscribe(obstacles => {
-        this.renderObstacles(obstacles); // Render or update obstacles on the canvas
-      });
-  }
-  
   // Render or update obstacles on the canvas based on the latest data
   private renderObstacles(obstaclesData: Obstacle[]) {
     obstaclesData.forEach(obstacleData => {
       const obstacle = this.findObstacleById(obstacleData.id);
       if (obstacle) {
-        this.updateObstacle(obstacle, obstacleData);
+        this.updateObstacleWithManager(obstacle, obstacleData);
       } else {
-        this.createObstacle(obstacleData);
+        this.createObstacleWithManager(obstacleData);
       }
     });
     this.obstacleLayer.batchDraw();
   }
 
-  // Create new obstacle
-  private createObstacle(obstacle: Obstacle) {
-    const newObstacle = new Konva.Rect({
-      x: obstacle.x,
-      y: obstacle.y,
-      width: obstacle.width,
-      height: obstacle.height,
-      fill: obstacle.color,
-      draggable: true,
-    });
-    
-    newObstacle.setAttr('id', obstacle.id);
+  // Create new obstacle using ManagerService
+  private createObstacleWithManager(obstacle: Obstacle) {
+    // Get the manager for the obstacle type
+    const manager = this.obstacleShapeManager.getShapeManagerByType(obstacle.shapeType);
+    if (!manager) return;
+
+    const newObstacle = manager.create(obstacle, false);
+
     this.obstacleLayer.add(newObstacle);
     this.addObstacleEventListeners(newObstacle);
   }
 
-  // Update existing obstacle
-  private updateObstacle(preObstacle: Konva.Rect, obstacle: Obstacle) {
-    preObstacle.setAttrs({
-      x: obstacle.x,
-      y: obstacle.y,
-      width: obstacle.width,
-      height: obstacle.height,
-      fill: obstacle.color,
-    });
+  // Update existing obstacle using ManagerService
+  private updateObstacleWithManager(preObstacle: Konva.Shape, obstacle: Obstacle) {
+    // Get the manager for the obstacle type
+    const manager = this.obstacleShapeManager.getShapeManagerByType(obstacle.shapeType);
+    if (!manager) return;
+
+    // Dynamically cast preObstacle to the correct type
+    const castedShape = preObstacle as ShapeMapping[typeof obstacle.shapeType]['shape'];
+    manager.update(castedShape, obstacle as ShapeMapping[typeof obstacle.shapeType]['config']);
   }
 
-  private findObstacleById(id: string): Konva.Rect | null {
+  private findObstacleById<T extends Konva.Shape>(id: string): T | null {
     return this.obstacleLayer.findOne((node: Konva.Node) => {
-      return node instanceof Konva.Rect && node.getAttr('id') === id;
-    }) as Konva.Rect;
+      return node instanceof Konva.Shape && node.getAttr('id') === id;
+    }) as T | null;
   }
 
   // Function to add event listeners to a obstacle
-  private addObstacleEventListeners(obstacle: Konva.Rect) {
+  private addObstacleEventListeners(obstacle: Konva.Shape) {
     this.konvaEventService.bindObjectEvents(obstacle, {
       'mouseover': () => this.handleObstacleMouseOver(obstacle),
       'mouseout': () => this.handleObstacleMouseOut(obstacle),
@@ -283,47 +323,52 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Mouse hovers over a obstacle, displaying the tooltip
-  private handleObstacleMouseOver(obstacle: Konva.Rect) {
-    // Update target stroke style
+  private handleObstacleMouseOver(obstacle: Konva.Shape) {
+    // Update obstacle's stroke style
     obstacle.setAttrs({
       stroke: 'rgba(255, 255, 255, 0.8)',
       strokeWidth: 1,
     });
-
-    // Update Tooltip position and content
-    this.updateTooltip({
-      x: obstacle.x(),
-      y: obstacle.y(),
-      width: obstacle.width(),
-      height: obstacle.height(),
-    });
-
+    this.showObstacleTooltip(obstacle);
     this.obstacleLayer.batchDraw();
   }
 
   // Mouse leaves a obstacle, hiding the tooltip
-  private handleObstacleMouseOut(obstacle: Konva.Rect) {
-    // Reset stroke style
+  private handleObstacleMouseOut(obstacle: Konva.Shape) {
+    // Reset obstacle's style
     obstacle.setAttrs({
       stroke: null,
       strokeWidth: 0,
     });
-
   }
 
   // Update Tooltip position and content
-  private updateTooltip(
-    obstacleData: TargetBounds,
-  ) {
-    const { x = 0, y = 0, width = 0, height = 0 } = obstacleData;
-    const title = `Obstacle at (${Math.round(x)}, ${Math.round(y)})`;
-    const description = [`Width: ${width.toFixed(2)}`, `Height: ${height.toFixed(2)}`];
+  private showObstacleTooltip(obstacle: Konva.Shape) {
+    this.tooltipService.destroyTooltip();
+    
+    // Get the current manager and shape
+    const result = this.obstacleShapeManager.getShapeAndManager(obstacle);
+    if (!result) {
+      return;
+    }
+    
+    const { manager, shape } = result;
+    const shapeData = manager.copyObstacleData(shape);
+    const shapeBounds = this.obstacleShapeManager.getShapeBounds(obstacle);
+    
+    const { x, y, ...rest } = shapeData;
+    const title = `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+
+    const description = Object.entries(rest).reduce((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, unknown>);
 
     // Show the tooltip with calculated position and content
     this.tooltipService.showTooltip({
       title,
       description,
-      targetBounds: obstacleData,
+      targetBounds: shapeBounds,
       container: this.stage.container(),
       theme: 'custom'
     });
@@ -342,13 +387,13 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   // Reset the zoom to the default level
   resetZoom() {
     this.konvaCanvasService.resetZoom();
-    this.tooltipService.updateTooltipPosition();
+    this.tooltipService.destroyTooltip();
   }
 
   // Adjust the zoom level
   private adjustZoom(factor: number) {
     this.konvaCanvasService.adjustZoom(factor);
-    this.tooltipService.updateTooltipPosition();
+    this.tooltipService.destroyTooltip();
   }
   
   // Move the stage up
@@ -363,18 +408,18 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Move the stage left
   moveLeft() {
-    this.moveCanvas(-1, 0);
+    this.moveCanvas(1, 0);
   }
 
   // Move the stage right
   moveRight() {
-    this.moveCanvas(1, 0);
+    this.moveCanvas(-1, 0);
   }
 
   // Adjust the canvas position by panning
   private moveCanvas(directionX: number, directionY: number) {
     this.konvaCanvasService.moveCanvas(directionX, directionY);
-    this.tooltipService.updateTooltipPosition();
+    this.tooltipService.destroyTooltip();
   }
 
   // Toggle grid visibility
@@ -395,6 +440,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Toggle layer visibility
   toggleLayerVisibility(layer: Konva.Layer) {
+    this.tooltipService.destroyTooltip();
     this.konvaCanvasService.toggleLayerVisibility(layer);
   }  
 }

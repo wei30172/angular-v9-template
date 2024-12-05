@@ -17,10 +17,10 @@ export class BabylonService {
     // Set up camera
     this.camera = new BABYLON.ArcRotateCamera(
       "camera",
-      Math.PI / 2,
-      Math.PI / 3,
-      800,
-      new BABYLON.Vector3(0, 0, 0),
+      Math.PI / 2, // Alpha angle (horizontal rotation)
+      Math.PI / 3, // Beta angle (vertical rotation)
+      1200,        // Distance from the target
+      new BABYLON.Vector3(0, 0, 0), // Target position
       this.scene
     );
     this.camera.attachControl(canvas, true);

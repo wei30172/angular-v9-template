@@ -61,12 +61,12 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    margin-bottom: 8px;
     gap: 2px;
     
     .tooltip-title {
+      font-size: 16px;
       font-weight: bold;
-      font-size: 15px;
-      margin-bottom: 4px;
     }
   
     .close-btn {
@@ -81,21 +81,24 @@
       cursor: pointer;
       font-weight: bold;
       margin-left: 4px;
-      font-size: 13px;
+      font-size: 12px;
       pointer-events: auto;
     }
     
     .tooltip-description {
-      font-size: 13px;
-  
-      ul {
-        margin: 4px 0;
-        padding-left: 12px;
-        list-style-type: disc;
+      font-size: 14px;
+      margin: 4px 0;
+
+      .tooltip-list {
+        padding-left: 20px;
+      
+        .tooltip-list-item {
+          margin-bottom: 4px;
+        }
       }
       
-      div {
-        margin: 4px 0;
+      .tooltip-key-value {
+        margin-bottom: 4px;
       }
     }
   }
