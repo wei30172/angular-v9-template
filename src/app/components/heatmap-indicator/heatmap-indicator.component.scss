@@ -1,0 +1,29 @@
+.heatmap-indicator-indicator {
+  position: relative;
+  height: 640px;
+  width: 40px;
+  margin-left: 10px;
+
+  .gradient-label {
+    position: absolute;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    color: white;
+    text-shadow: 0 0 3px black;
+    font-size: 12px;
+  }
+
+  .label-top {
+    top: 0;
+  }
+
+  .label-middle {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .label-bottom {
+    bottom: 0;
+  }
+}

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
+import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import { CanvasSettings } from 'src/app/config/canvas-settings';
 
 @Injectable({
@@ -48,8 +49,8 @@ export class KonvaCanvasService {
     this.transformer = new Konva.Transformer({
       rotateEnabled: true,
       resizeEnabled: true,
-      anchorSize: 15,
-      opacity: 0.8,
+      anchorSize: ObstacleSettings.Transformer.AnchorSize,
+      opacity: ObstacleSettings.Transformer.Opacity,
     });
     this.obstacleLayer.add(this.transformer);
 
@@ -372,10 +373,10 @@ export class KonvaCanvasService {
     }
 
     const {
-      radius = 10, // Default radius for target
-      color = 'rgba(255, 0, 0, 0.9)', // Default color
-      lineWidth = 1, // Default line width for cross
-      visible = false, // Default visibility
+      radius = CanvasSettings.HoverTarget.DefaultRadius,
+      color = CanvasSettings.HoverTarget.DefaultColor,
+      lineWidth = CanvasSettings.HoverTarget.DefaultLineWidth,
+      visible = CanvasSettings.HoverTarget.DefaultVisibility,
     } = options || {};
 
     let hoverTarget: Konva.Group | Konva.Circle;

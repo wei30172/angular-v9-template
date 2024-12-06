@@ -19,7 +19,7 @@ export class HeatmapDataService {
     const scaledHeight = Math.round(height * scale);
 
     const heatPoints = this.generateRandomHeatPoints(scaledWidth, scaledHeight, scale);
-    const radius = 50 * Math.sqrt(scale); // Radius around each heat point to affect
+    const radius = Math.min(width, height) * 0.05; // Radius around each heat point to affect
     
     // Process each heat point and calculate its influence on surrounding pixels
     heatPoints.forEach(point => {
@@ -31,7 +31,7 @@ export class HeatmapDataService {
           if (x >= 0 && x < scaledWidth && y >= 0 && y < scaledHeight) {
             const distance = Math.sqrt(dx ** 2 + dy ** 2);
             if (distance <= radius) {
-              const influence = point.value * (1 - distance / radius); // Decrease influence by distance
+              const influence = point.value * Math.exp(-(distance ** 2) / (2 * radius ** 2)); // Decrease influence by distance
               const key = `${x},${y}`;
 
               // Use cache to avoid recalculating the same pixel's intensity
@@ -109,7 +109,7 @@ export class HeatmapDataService {
       heatPoints.push({
         x: Math.random() * width, // Random x-coordinate within canvas width
         y: Math.random() * height, // Random y-coordinate within canvas height
-        value: Math.random() * 0.5 + 0.5, // Random intensity between 0.5 and 1
+        value: Math.max(0, Math.min(1, 0.5 + (Math.random() - 0.5) * 0.4)), // Random intensity between 0 and 1
       });
     }
   

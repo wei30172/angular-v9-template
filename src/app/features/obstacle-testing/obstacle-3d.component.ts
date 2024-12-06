@@ -371,7 +371,12 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
   }
 
   // Set the initial material and color for a new box
-  private setBoxMaterial(box: BABYLON.Mesh, color: string, scene: BABYLON.Scene, transparency: number = 0.9) {
+  private setBoxMaterial(
+    box: BABYLON.Mesh,
+    color: string,
+    scene: BABYLON.Scene,
+    transparency: number = ObstacleSettings.MaterialOpacity
+  ) {
     const material = new BABYLON.StandardMaterial(`material-${box.id}`, scene);
     material.diffuseColor = BABYLON.Color3.FromHexString(color);
     material.alpha = transparency;

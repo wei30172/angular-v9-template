@@ -8,4 +8,9 @@ export const ObstacleSettings = {
   MaxObstacleSize: 60, // Maximum allowable size for generated obstacles
   MinObstacleSize: 10, // Minimum allowable size for generated obstacles
   DefaultTopWidthRatio: 0.7, // Default ratio of top width to bottom width for trapezoid obstacles
+  Transformer: {
+    AnchorSize: 15, // Anchor size for the transformer
+    Opacity: 0.8, // Opacity for the transformer
+  },
+  MaterialOpacity: 0.9, // Opacity for the 3D material
 };

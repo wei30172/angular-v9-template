@@ -20,14 +20,7 @@ export class SimpleheatService {
     radius: number = HeatmapSettings.DefaultRadius,
     max: number = HeatmapSettings.DefaultMaxValue,
     blurFactor: number = HeatmapSettings.DefaultBlurFactor,
-    gradient: Record<number, string> = {
-      0.0: 'navy',
-      0.1: 'blue',
-      0.2: 'cyan',
-      0.3: 'lime',
-      0.4: 'yellow',
-      0.5: 'red',
-    }
+    gradient: Record<number, string> = HeatmapSettings.DefaultGradient
   ) {
     const scaledWidth = Math.round(canvas.width * scale);
     const scaledHeight = Math.round(canvas.height * scale);
@@ -78,7 +71,7 @@ export class SimpleheatService {
       this.originalCanvas.height
     );
   }
-  
+
   // Clear the heatmap data
   clearHeatmap() {
     this.heatmapDataService.clearHeatmapData();
