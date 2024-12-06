@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as simpleheat from 'simpleheat';
 import { HeatmapDataService } from './heatmap-data.service';
+import { HeatmapSettings } from 'src/app/config/heatmap-settings';
 
 @Injectable({
   providedIn: 'root',
@@ -12,19 +13,13 @@ export class SimpleheatService {
 
   constructor(private heatmapDataService: HeatmapDataService) {}
 
-  // Default configuration values for heatmap
-  private readonly DEFAULT_SCALE = 1;  // Factor to increase data resolution for more detailed rendering
-  private readonly DEFAULT_RADIUS = 0.5; // Small radius for single pixel influence
-  private readonly DEFAULT_MAX_VALUE = 1; // Max value for heat intensity scaling
-  private readonly DEFAULT_BLUR_FACTOR = 0.01; // Small blur for clarity
-
   // Initialize the heatmap instance with canvas and configuration
   initializeHeatmap(
     canvas: HTMLCanvasElement,
-    scale: number = this.DEFAULT_SCALE,
-    radius: number = this.DEFAULT_RADIUS,
-    max: number = this.DEFAULT_MAX_VALUE,
-    blurFactor: number = this.DEFAULT_BLUR_FACTOR,
+    scale: number = HeatmapSettings.DefaultScale,
+    radius: number = HeatmapSettings.DefaultRadius,
+    max: number = HeatmapSettings.DefaultMaxValue,
+    blurFactor: number = HeatmapSettings.DefaultBlurFactor,
     gradient: Record<number, string> = {
       0.0: 'navy',
       0.1: 'blue',
@@ -56,7 +51,7 @@ export class SimpleheatService {
 
   // Render the heatmap on the canvas using data from HeatmapDataService
   // Scales down data points based on the scale factor
-  renderHeatmap(scale: number = this.DEFAULT_SCALE) {
+  renderHeatmap(scale: number = HeatmapSettings.DefaultScale) {
     const points = [];
     // Converts pixelData to an array of points with [x, y, intensity] format
     // Map forEach: first param is value, second is key

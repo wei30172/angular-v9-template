@@ -2,13 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { ObstacleCollisionService } from './obstacle-collision.service'; 
 import { Obstacle, ObstacleType } from 'src/app/models/obstacle.model';
-
-export enum ObstacleSettings {
-  MinDrag = 5,
-  MoveOffset = 10,
-  DefaultZHeight = 50,
-  DefaultSpaceHeight = 350,
-}
+import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 
 @Injectable({
   providedIn: 'root'
@@ -25,12 +19,16 @@ export class ObstacleGenerationService {
   private obstacleUpdatesSubject = new BehaviorSubject<Obstacle | null>(null);
   public obstacleUpdates$ = this.obstacleUpdatesSubject.asObservable();
 
-  private readonly MAX_OBSTACLE_SIZE = 120; // Maximum obstacle size
-  private readonly MIN_OBSTACLE_SIZE = 20; // Minimum obstacle size
-  
-  constructor(
-    private collisionService: ObstacleCollisionService
-  ) {}
+  // Spinner loading state
+  private loadingSubject = new BehaviorSubject<boolean>(false);
+  public isLoading$ = this.loadingSubject.asObservable();
+
+  constructor(private collisionService: ObstacleCollisionService) {}
+
+  // update loading state
+  setLoadingState(isLoading: boolean): void {
+    this.loadingSubject.next(isLoading);
+  }
 
   // Define a map of generators for obstacle shapes as a class property
   private obstacleGenerators: { 
@@ -81,7 +79,7 @@ export class ObstacleGenerationService {
           id,
           x,
           y,
-          topWidth: parseFloat((width * 0.7).toFixed(2)),
+          topWidth: parseFloat((width * ObstacleSettings.DefaultTopWidthRatio).toFixed(2)),
           bottomWidth: parseFloat(width.toFixed(2)),
           height: parseFloat(height.toFixed(2)),
           color: this.getRandomColor(),
@@ -98,49 +96,98 @@ export class ObstacleGenerationService {
     this.obstaclesSubject.next(Array.from(this.obstacleMap.values()));
   }
 
-  // Generate random obstacles with specified count and canvas boundaries
-  generateRandomObstacles(count: number, canvasWidth: number, canvasHeight: number): void {
-    if (this.isInitialized) return; // Prevent re-generation
-    this.isInitialized = true; // Mark as initialized
-    
-    if (count <= 0 || canvasWidth <= 0 || canvasHeight <= 0) {
-      console.warn('Invalid parameters for obstacle generation');
-      return;
-    }
-    
+  // Create a random obstacle
+  private createRandomObstacle(
+    canvasWidth: number,
+    canvasHeight: number
+  ): Obstacle {
+    // Randomly select an obstacle type
     const types = [
       ObstacleType.Rectangle,
       ObstacleType.Ellipse,
       ObstacleType.Triangle,
       ObstacleType.Trapezoid
     ];
+    const shapeType = types[Math.floor(Math.random() * types.length)];
 
+    // Generate random dimensions within the specified range
+    const randomWidth =
+      Math.random() *
+        (ObstacleSettings.MaxObstacleSize - ObstacleSettings.MinObstacleSize) +
+      ObstacleSettings.MinObstacleSize;
+    const randomHeight =
+      Math.random() *
+        (ObstacleSettings.MaxObstacleSize - ObstacleSettings.MinObstacleSize) +
+      ObstacleSettings.MinObstacleSize;
 
+    // Calculate random center positions, ensuring the obstacle stays within canvas bounds
+    const randomX =
+      parseFloat((Math.random() * (canvasWidth - randomWidth) + randomWidth / 2).toFixed(2));
+    const randomY =
+      parseFloat((Math.random() * (canvasHeight - randomHeight) + randomHeight / 2).toFixed(2));
+
+    // Generate a unique ID for the obstacle
+    const id = `${shapeType}-${Math.random().toString(36).substring(2, 9)}`;
+
+    // Use the appropriate generator to create the obstacle
+    return this.obstacleGenerators[shapeType](
+      id,
+      randomX,
+      randomY,
+      randomWidth,
+      randomHeight
+    );
+  };
+
+  // Generate random obstacles with specified count, canvas boundaries, and max iterations
+  generateRandomObstacles(
+    count: number,
+    canvasWidth: number,
+    canvasHeight: number,
+    maxIterations: number = ObstacleSettings.MaxIterations
+  ): void {
+    // Prevent re-generation if already initialized
+    if (this.isInitialized) return; 
+    this.isInitialized = true;
+
+    if (count <= 0 || canvasWidth <= 0 || canvasHeight <= 0 || maxIterations <= 0) {
+      console.warn('Invalid parameters for obstacle generation');
+      return;
+    }
+
+    // Set loading state to true
+    this.setLoadingState(true);
+
+    // Generate obstacles with overlap checking
     while (this.obstacleMap.size < count) {
-      // Randomly select an obstacle type
-      const shapeType = types[Math.floor(Math.random() * types.length)];
+      let iterations = 0; // Reset iterations for each obstacle
+      let obstacle: Obstacle;
+      
+      do {
+        iterations++;
+        obstacle = this.createRandomObstacle(canvasWidth, canvasHeight);
 
-      // Generate random dimensions within specified range (between MIN_OBSTACLE_SIZE and MAX_OBSTACLE_SIZE)
-      const randomWidth = Math.random() * (this.MAX_OBSTACLE_SIZE - this.MIN_OBSTACLE_SIZE) + this.MIN_OBSTACLE_SIZE;
-      const randomHeight = Math.random() * (this.MAX_OBSTACLE_SIZE - this.MIN_OBSTACLE_SIZE) + this.MIN_OBSTACLE_SIZE;
+        // If the maximum number of iterations is exceeded, force add the obstacle
+        if (iterations > maxIterations) {
+          console.log(
+            `Max iterations ${maxIterations} reached for obstacle. Adding obstacle ${obstacle.id} regardless of overlap.`
+          );
+          this.obstacleMap.set(obstacle.id, obstacle);
+          this.collisionService.addObstacleToGridMap(obstacle);
+          break;
+        }
+      } while (this.collisionService.isOverlapping(obstacle)); // Retry if overlap is detected
 
-      // Ensure x and y positions keep the obstacle within canvas bounds
-      const randomX = Math.floor(Math.random() * (canvasWidth - randomWidth));
-      const randomY = Math.floor(Math.random() * (canvasHeight - randomHeight));
-
-      // Generate a unique ID for the new obstacle with type prefix
-      const id = `${shapeType}-${Math.random().toString(36).substring(2, 9)}`;
-
-      // Create the obstacle using the obstacleGenerators map
-      const obstacle = this.obstacleGenerators[shapeType](id, randomX, randomY, randomWidth, randomHeight);
-
-      // Check if the obstacle overlaps with any existing obstacles in relevant grids
-      if (!this.collisionService.isOverlapping(obstacle)) {
-        this.obstacleMap.set(id.toString(), obstacle); // Add non-overlapping obstacle
-        this.collisionService.addObstacleToGridMap(obstacle); // Add obstacle to grid map
+      // Add the obstacle if it does not overlap and within iteration limits
+      if (iterations <= maxIterations && !this.collisionService.isOverlapping(obstacle)) {
+        this.obstacleMap.set(obstacle.id, obstacle);
+        this.collisionService.addObstacleToGridMap(obstacle);
       }
     }
+
+    // Update observable and stop loading
     this.updateObstaclesSubject();
+    this.setLoadingState(false);
   }
 
   // Returns the current list of obstacles

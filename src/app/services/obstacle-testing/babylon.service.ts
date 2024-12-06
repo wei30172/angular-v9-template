@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as BABYLON from 'babylonjs';
+import { CameraSettings } from 'src/app/config/camera-settings';
 
 @Injectable({
   providedIn: 'root',
@@ -17,20 +18,28 @@ export class BabylonService {
     // Set up camera
     this.camera = new BABYLON.ArcRotateCamera(
       "camera",
-      Math.PI / 2, // Alpha angle (horizontal rotation)
-      Math.PI / 3, // Beta angle (vertical rotation)
-      1200,        // Distance from the target
-      new BABYLON.Vector3(0, 0, 0), // Target position
+      CameraSettings.Alpha, // Horizontal rotation angle around the target
+      CameraSettings.Beta, // Vertical rotation angle above the target
+      CameraSettings.Distance, // Distance from the target
+      new BABYLON.Vector3(
+        CameraSettings.Target.x,
+        CameraSettings.Target.y,
+        CameraSettings.Target.z
+      ), // Target position
       this.scene
     );
-    this.camera.attachControl(canvas, true);
+
+    // Enable camera control for user interaction
+    if (CameraSettings.AttachControl) {
+      this.camera.attachControl(canvas, true);
+    }
 
     // Disable keyboard controls
     this.camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
 
     // Add a light source
     const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), this.scene);
-    light.intensity = 0.7;
+    light.intensity = CameraSettings.LightIntensity;
 
     // Start rendering loop
     this.engine.runRenderLoop(() => {
@@ -42,11 +51,19 @@ export class BabylonService {
   }
 
   // Load a background image as ground texture in the scene
-  loadBackgroundImage(imageUrl: string, groundSize: number): void {
+  loadBackgroundImage(
+    imageUrl: string,
+    canvasWidth: number,
+    canvasHeight: number,
+  ): void {
     if (!this.scene) return;
 
     // Create the ground and set the material with background texture
-    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: groundSize, height: groundSize }, this.scene);
+    const ground = BABYLON.MeshBuilder.CreateGround(
+      "ground",
+      { width: canvasWidth, height: canvasHeight },
+      this.scene
+    );
     const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", this.scene);
     
     // Load texture and apply scaling to match 2D orientation
@@ -55,6 +72,10 @@ export class BabylonService {
     texture.vScale = -1;
     groundMaterial.diffuseTexture = texture;
 
+    // Disable reflections by setting specular color to black
+    groundMaterial.specularColor = BABYLON.Color3.Black();
+
+    // Position ground at base level
     ground.material = groundMaterial;
     ground.position.y = 0; // Position ground at base level
   }

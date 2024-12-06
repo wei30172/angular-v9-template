@@ -1,7 +1,15 @@
 <div class="editor-container">
+  <!-- Loading overlay -->
+  <div class="spinner-overlay" *ngIf="isLoading$ | async">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Konva section -->
   <div class="konva-section">
     <app-konva-obstacle></app-konva-obstacle>
   </div>
+
+  <!-- Babylon section -->
   <div
     class="babylon-section"
     [ngClass]="{ 'scaled': isBabylonSectionExpanded }"

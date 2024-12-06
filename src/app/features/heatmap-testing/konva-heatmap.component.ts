@@ -12,6 +12,9 @@ import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { Obstacle } from 'src/app/models/obstacle.model';
 import { HeatmapDataService } from 'src/app/services/heatmap-testing/heatmap-data.service';
 import { SimpleheatService } from 'src/app/services/heatmap-testing/simpleheat.service';
+import { HeatmapSettings } from 'src/app/config/heatmap-settings';
+import { ObstacleSettings } from 'src/app/config/obstacle-settings';
+import { CanvasSettings } from 'src/app/config/canvas-settings';
 
 @Component({
   selector: 'app-konva-heatmap',
@@ -24,10 +27,6 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Dynamic ID for simpleHeatCanvas
   simpleHeatCanvasId: string;
-
-  // Constants for canvas behavior
-  private readonly OBSTACLE_COUNT = 20;
-  private readonly HOVER_RADIUS = 1;
   
   layers = [];
 
@@ -61,12 +60,11 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.initHoverTarget();
 
     // Load the background image for the canvas
-    this.konvaCanvasService.loadBackgroundImage(
-      'assets/images/floorplan.jpg'
-    );
-    // Generate default obstacles
+    this.konvaCanvasService.loadBackgroundImage(CanvasSettings.BackgroundImageUrl);
+    
+    // Generate random obstacles
     this.obstacleGenerationService.generateRandomObstacles(
-      this.OBSTACLE_COUNT,
+      ObstacleSettings.DefaultObstacleCount,
       this.stage.width(),
       this.stage.height()
     );
@@ -76,7 +74,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.registerKeyboardShortcuts(); // Register keyboard shortcuts with actions
     this.generateAndRenderHeatmap(); // Render heatmap
     
-    // Defer initialization until after change detection completes
+    // Ensure layers list is rendered
     setTimeout(() => {
       this.initializeLayerList(); // Initialize layers list
     });
@@ -225,8 +223,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     
     const gridX = Math.floor(pointerPosition.x); 
     const gridY = Math.floor(pointerPosition.y);
-    const radius = this.HOVER_RADIUS
-    // console.log({gridX, gridY})
+    const radius = HeatmapSettings.DefaultRadius * 2
 
     // Update the position of hoverTarget
     this.hoverTarget.setAttrs({

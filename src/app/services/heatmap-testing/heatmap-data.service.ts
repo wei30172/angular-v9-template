@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { HeatmapSettings } from 'src/app/config/heatmap-settings';
 
 @Injectable({
   providedIn: 'root'
@@ -6,13 +7,12 @@ import { Injectable } from '@angular/core';
 export class HeatmapDataService {
   pixelData: Map<number, Map<number, number>> = new Map(); // Nested Map for efficient lookup, stores intensity for each (x, y) coordinate point.
   private cache: Map<string, number> = new Map(); // Cache for already-calculated areas
-  private readonly DEFAULT_SCALE = 1;  // Factor to increase data resolution for more detailed rendering
 
   // Generate heatmap data based on canvas width and height
   generateHeatmapData(
     width: number,
     height: number,
-    scale: number = this.DEFAULT_SCALE,
+    scale: number = HeatmapSettings.DefaultScale,
     step: number = 2,  // Step size for iterating around each heat point
   ): void {
     const scaledWidth = Math.round(width * scale);
@@ -69,7 +69,7 @@ export class HeatmapDataService {
     x: number,
     y: number,
     radius: number = 1, // Radius around (x, y) to calculate the average intensity
-    scale: number = this.DEFAULT_SCALE
+    scale: number = HeatmapSettings.DefaultScale
   ): number | null {
     const adjustedX = Math.round(x * scale);
     const adjustedY = Math.round(y * scale);

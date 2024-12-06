@@ -1,12 +1,6 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
-
-enum CanvasSettings {
-  MinZoom = 1,
-  MaxZoom = 10,
-  PanOffset = 20,
-  ScaleBy = 1.05,
-}
+import { CanvasSettings } from 'src/app/config/canvas-settings';
 
 @Injectable({
   providedIn: 'root',
@@ -20,18 +14,13 @@ export class KonvaCanvasService {
   private gridLayer: Konva.Layer | null = null;
   private hoverLayer: Konva.Layer | null = null;
   private transformer: Konva.Transformer | null = null;
-  
-  // Default constants
-  private readonly DEFAULT_GRID_SIZE = 10;
-  private readonly DEFAULT_WIDTH = 640;
-  private readonly DEFAULT_HEIGHT = 640;
 
   // Initialize the stage with optional grid size, width, and height
   initializeStage(
     containerId: string,
-    width: number = this.DEFAULT_WIDTH,
-    height: number = this.DEFAULT_HEIGHT,
-    gridSize: number = this.DEFAULT_GRID_SIZE
+    width: number = CanvasSettings.DefaultWidth,
+    height: number = CanvasSettings.DefaultHeight,
+    gridSize: number = CanvasSettings.DefaultGridSize
   ) {
     this.stage = new Konva.Stage({ container: containerId, width, height });
 

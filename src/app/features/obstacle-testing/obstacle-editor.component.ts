@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 
 @Component({
   selector: 'app-obstacle-editor',
@@ -7,10 +9,18 @@ import { Component, OnInit } from '@angular/core';
 })
 export class ObstacleEditorComponent implements OnInit {
   isBabylonSectionExpanded = true;
+  isLoading$: Observable<boolean>;
 
-  ngOnInit(): void {}
+  constructor(private obstacleGenerationService: ObstacleGenerationService) {}
 
-  zoomBabylonSection(): void {
+  ngOnInit() {
+    // Ensure loading state is set after change detection
+    setTimeout(() => {
+      this.isLoading$ = this.obstacleGenerationService.isLoading$;
+    });
+  }
+
+  zoomBabylonSection() {
     this.isBabylonSectionExpanded = !this.isBabylonSectionExpanded;
   }
 }

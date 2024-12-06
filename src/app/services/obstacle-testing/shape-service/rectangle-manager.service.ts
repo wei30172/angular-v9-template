@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
-import { ObstacleSettings, ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
+import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 import { ObstacleFormService } from 'src/app/services/obstacle-testing//obstacle-form.service';
 import { ShapeManager } from './obstacle-shape-manager';
+import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import { ObstacleType, RectangleObstacle } from 'src/app/models/obstacle.model';
 
 @Injectable({
@@ -39,8 +40,8 @@ export class RectangleManagerService implements ShapeManager<Konva.Rect, Rectang
 
   update(shape: Konva.Rect, values: Partial<RectangleObstacle>): void {
     shape.setAttrs({
-      x: values.x !== undefined ? Math.floor(values.x) : shape.x(),
-      y: values.y !== undefined ? Math.floor(values.y) : shape.y(),
+      x: values.x !== undefined ? parseFloat(values.x.toFixed(2)) : shape.x(),
+      y: values.y !== undefined ? parseFloat(values.y.toFixed(2)) : shape.y(),
       width: values.width !== undefined ? parseFloat(values.width.toFixed(2)) : shape.width(),
       height: values.height !== undefined ? parseFloat(values.height.toFixed(2)) : shape.height(),
       rotation: values.rotation !== undefined ? parseFloat(values.rotation.toFixed(2)) : shape.rotation(),

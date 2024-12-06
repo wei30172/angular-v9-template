@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Subject, Observable, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ObstacleSettings } from 'src/app/services/obstacle-testing/obstacle-generation.service';
+import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import {
   Obstacle,
   BaseObstacle,

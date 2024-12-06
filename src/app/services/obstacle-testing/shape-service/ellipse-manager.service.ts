@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
-import { ObstacleSettings, ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
+import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 import { ObstacleFormService } from 'src/app/services/obstacle-testing//obstacle-form.service';
 import { ShapeManager } from './obstacle-shape-manager';
+import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import { ObstacleType, EllipseObstacle } from 'src/app/models/obstacle.model';
 
 @Injectable({
@@ -37,8 +38,8 @@ export class EllipseManagerService implements ShapeManager<Konva.Ellipse, Ellips
 
   update(shape: Konva.Ellipse, values: Partial<EllipseObstacle>): void {
     shape.setAttrs({
-      x: values.x !== undefined ? Math.floor(values.x) : shape.x(),
-      y: values.y !== undefined ? Math.floor(values.y) : shape.y(),
+      x: values.x !== undefined ? parseFloat(values.x.toFixed(2)) : shape.x(),
+      y: values.y !== undefined ? parseFloat(values.y.toFixed(2)) : shape.y(),
       radiusX: values.radiusX !== undefined ? parseFloat(values.radiusX.toFixed(2)) : shape.radiusX(),
       radiusY: values.radiusY !== undefined ? parseFloat(values.radiusY.toFixed(2)) : shape.radiusY(),
       rotation: values.rotation !== undefined ? parseFloat(values.rotation.toFixed(2)) : shape.rotation(),

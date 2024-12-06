@@ -4,8 +4,10 @@ import { takeUntil } from 'rxjs/operators';
 import earcut from "earcut";
 import * as BABYLON from 'babylonjs';
 
-import { ObstacleSettings, ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
+import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 import { BabylonService } from 'src/app/services/obstacle-testing/babylon.service';
+import { ObstacleSettings } from 'src/app/config/obstacle-settings';
+import { CanvasSettings } from 'src/app/config/canvas-settings';
 import {
   Obstacle,
   ObstacleType,
@@ -27,16 +29,9 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
   // Dynamic ID for babylonCanvas
   babylonCanvasId: string;
 
-  // Constants for canvas behavior
-  private readonly OBSTACLE_COUNT = 20;
-
   // Stores the obstacles' 3D representations
   private obstaclesMeshes = new Map<string, BABYLON.Mesh>();
   private destroy$ = new Subject<void>();
-
-  // Define constants for scene configuration
-  private readonly BACKGROUND_IMAGE_URL = 'assets/images/floorplan.jpg';
-  private readonly GROUND_SIZE = 640; // Match 2D canvas size
 
   // Local copy of obstacles to avoid modifying the original data
   private localObstacles: Obstacle[] = [];
@@ -223,13 +218,14 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
     // Initialize the Babylon engine and load the background image
     this.initBabylonEngine();
 
-    this.subscribeToObstacles(); // Subscribe to obstacle data
+    // Subscribe to obstacle data
+    this.subscribeToObstacles();
 
-    // Generate random obstacles initially
+    // Generate random obstacles
     this.obstacleGenerationService.generateRandomObstacles(
-      this.OBSTACLE_COUNT,
-      this.GROUND_SIZE,
-      this.GROUND_SIZE
+      ObstacleSettings.DefaultObstacleCount,
+      CanvasSettings.DefaultWidth,
+      CanvasSettings.DefaultHeight
     );
   }
 
@@ -252,7 +248,11 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
     this.babylonService.initializeEngine(babylonCanvas);
 
     // Load a background image as ground texture in the scene
-    this.babylonService.loadBackgroundImage(this.BACKGROUND_IMAGE_URL, this.GROUND_SIZE);
+    this.babylonService.loadBackgroundImage(
+      CanvasSettings.BackgroundImageUrl,
+      CanvasSettings.DefaultWidth,
+      CanvasSettings.DefaultHeight
+    );
   }
 
   // Subscribe to obstacle list from service
@@ -341,8 +341,8 @@ export class Obstacle3DComponent implements OnInit, OnDestroy {
 
   // Set the position of the box based on obstacle data
   private setBoxPosition(box: BABYLON.Mesh, obstacle: Obstacle) {
-    const centerX = this.GROUND_SIZE / 2;
-    const centerZ = this.GROUND_SIZE / 2;
+    const centerX = CanvasSettings.DefaultWidth / 2;
+    const centerZ = CanvasSettings.DefaultHeight / 2;
 
     // Get the center calculator function for the obstacle type
     const calculateCenter = this.centerCalculators[obstacle.shapeType];

@@ -4,7 +4,7 @@ import { takeUntil, distinctUntilChanged, debounceTime, withLatestFrom, filter, 
 import Konva from 'konva';
 
 import { ShapeMapping, ObstacleShapeManager, ShapeManager } from 'src/app/services/obstacle-testing/shape-service/obstacle-shape-manager';
-import { ObstacleSettings, ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
+import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
 import { ObstacleFormService } from 'src/app/services/obstacle-testing//obstacle-form.service';
 import { CanvasState, CanvasStateService } from 'src/app/services/obstacle-testing/canvas-state.service';
 import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
@@ -12,6 +12,8 @@ import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event
 import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
 import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { NotificationService } from 'src/app/services/shared/notification.service';
+import { ObstacleSettings } from 'src/app/config/obstacle-settings';
+import { CanvasSettings } from 'src/app/config/canvas-settings';
 import { Obstacle, ObstacleType } from 'src/app/models/obstacle.model';
 
 @Component({
@@ -22,9 +24,6 @@ import { Obstacle, ObstacleType } from 'src/app/models/obstacle.model';
 export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy {
   // Dynamic ID for konvaObstacleCanvas
   konvaObstacleCanvasId: string;
-
-  // Constants for canvas behavior
-  private readonly OBSTACLE_COUNT = 20;
 
   isFormVisible = false;
   isObstacleListVisible = false; 
@@ -71,12 +70,11 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     this.initializeCanvas();
 
     // Load the background image for the canvas
-    this.konvaCanvasService.loadBackgroundImage(
-      'assets/images/floorplan.jpg'
-    );
-    // Generate default obstacles
+    this.konvaCanvasService.loadBackgroundImage(CanvasSettings.BackgroundImageUrl);
+
+    // Generate random obstacles
     this.obstacleGenerationService.generateRandomObstacles(
-      this.OBSTACLE_COUNT,
+      ObstacleSettings.DefaultObstacleCount,
       this.stage.width(),
       this.stage.height()
     );
