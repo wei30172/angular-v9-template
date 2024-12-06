@@ -27,7 +27,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Dynamic ID for simpleHeatCanvas
   simpleHeatCanvasId: string;
-  
+
   layers = [];
 
   private stage: Konva.Stage;
@@ -119,7 +119,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.layers = [
       { name: 'obstacle', label: 'Obstacle Layer', layer: this.obstacleLayer, isTop: false },
       { name: 'heatmap', label: 'Heatmap Layer', layer: this.heatmapLayer, isTop: false },
-      { name: 'hover', label: 'Heat Target', layer: this.hoverLayer, isTop: false },
+      { name: 'hover', label: 'Hover Target', layer: this.hoverLayer, isTop: false },
     ];
     this.updateLayerStatus();
   }
@@ -129,16 +129,6 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.layers.forEach(layerItem => {
       layerItem.isTop = this.konvaCanvasService.isLayerOnTop(layerItem.layer);
     });
-  }
-
-  // Check visibility of heatmapLayer
-  isHeatmapLayerVisible(): boolean {
-    return this.heatmapLayer ? this.heatmapLayer.visible() : false;
-  }
-
-  // Filter out layers with name 'hover'
-  get filteredLayers() {
-    return this.layers.filter(layer => layer.name !== 'hover');
   }
 
   // Subscribe to obstacle list from service
@@ -155,10 +145,26 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Bind the canvas interaction events
   private bindCanvasEvents() {
-    // Handle mouse leave from canvas
+    // Handle mouse leave from the stage
     this.stage.on('mouseleave', () => this.handleMouseLeave());
     // Handle zoom in/out using the mouse wheel
-    this.stage.on('wheel', (event: Konva.KonvaEventObject<WheelEvent>) => this.handleMouseWheel(event));
+    this.stage.on('wheel', (event: Konva.KonvaEventObject<WheelEvent>) =>
+      this.handleMouseWheel(event)
+    );
+  }
+
+  // Hide hover target
+  private handleMouseLeave() {
+    this.hoverTarget.visible(false);
+    this.hoverLayer.batchDraw();
+  }
+
+  // Handle zooming with the mouse wheel
+  private handleMouseWheel(event: Konva.KonvaEventObject<WheelEvent>) {
+    const wheelEvent = event.evt as WheelEvent;
+    wheelEvent.preventDefault();
+    this.konvaCanvasService.adjustMouseWheelZoom(wheelEvent);
+    this.tooltipService.destroyTooltip();
   }
 
   // Listen for global keydown events
@@ -185,7 +191,6 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   private generateAndRenderHeatmap() {
     // Get the canvas element by the dynamically generated ID
     const heatmapCanvas = document.getElementById(this.simpleHeatCanvasId) as unknown as HTMLCanvasElement;
-    // console.log({heatmapCanvas})
 
     // Ensure the heatmap canvas matches the stage dimensions
     heatmapCanvas.width = this.stage.width();
@@ -208,13 +213,14 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.konvaCanvasService.addHeatmapLayer(heatmapImageUrl);
 
     if (this.heatmapLayer) {
-      this.heatmapLayer.on('mousemove', () => this.handleHeatmapHover());
+      this.heatmapLayer.on('mousemove', () => this.handleHeatmapMouseMove());
     }
   }
 
   // Display intensity data on hover
-  private handleHeatmapHover() {
+  private handleHeatmapMouseMove() {
     const pointerPosition = this.heatmapLayer.getRelativePointerPosition();
+    
     if (!pointerPosition) {
       this.hoverTarget.visible(false);
       this.tooltipService.destroyTooltip();
@@ -239,34 +245,14 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     const title = `Intensity: ${averageIntensity.toFixed(2)}`;
     const description = { X: gridX, Y: gridY };
 
-    if (averageIntensity !== null) {
-      this.tooltipService.showTooltip({
-        title,
-        description,
-        targetBounds: { x: gridX, y: gridY },
-        container: this.stage.container(),
-        offset: 50,
-        theme: 'light'
-      });
-    } else {
-      this.tooltipService.destroyTooltip();
-    }
-  }
-
-  // Hide hover target when the mouse leaves the canvas
-  private handleMouseLeave() {
-    if (this.hoverTarget) {
-      this.hoverTarget.visible(false);
-      this.hoverLayer.batchDraw();
-    }
-  }
-
-  // Handle zooming with the mouse wheel
-  private handleMouseWheel(event: Konva.KonvaEventObject<WheelEvent>) {
-    const wheelEvent = event.evt as WheelEvent;
-    wheelEvent.preventDefault();
-    this.konvaCanvasService.adjustMouseWheelZoom(wheelEvent);
-    this.tooltipService.destroyTooltip();
+    this.tooltipService.showTooltip({
+      title,
+      description,
+      targetBounds: { x: gridX, y: gridY },
+      container: this.stage.container(),
+      offset: 50,
+      theme: 'light'
+    });
   }
 
   // Render or update obstacles on the canvas based on the latest data
@@ -319,19 +305,34 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // Mouse hovers over a obstacle, displaying the tooltip
+  // Display obstacle data on hover
   private handleObstacleMouseOver(obstacle: Konva.Shape) {
+    // Retrieve x and y values
+    const x = obstacle.getAttr('x') ?? 0;
+    const y = obstacle.getAttr('y') ?? 0;
+
+    // Update the position of hoverTarget
+    this.hoverTarget.setAttrs({
+      x: x,
+      y: y,
+      visible: true,
+    });
+
     // Update obstacle's stroke style
     obstacle.setAttrs({
       stroke: 'rgba(255, 255, 255, 0.8)',
       strokeWidth: 1,
     });
+
     this.showObstacleTooltip(obstacle);
     this.obstacleLayer.batchDraw();
   }
 
-  // Mouse leaves a obstacle, hiding the tooltip
+  // Hide the tooltip when the mouse leaves the obstacle
   private handleObstacleMouseOut(obstacle: Konva.Shape) {
+    // Hide hover target
+    this.handleMouseLeave();
+
     // Reset obstacle's style
     obstacle.setAttrs({
       stroke: null,

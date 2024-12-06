@@ -9,7 +9,6 @@ import Konva from 'konva';
 export class ToggleLayerComponent {
   @Input() label: string;
   @Input() layer: Konva.Layer;
-  @Input() disabled: boolean = false;
   @Output() toggleVisibility = new EventEmitter<Konva.Layer>();
 
   onToggleVisibility(layer: Konva.Layer) {

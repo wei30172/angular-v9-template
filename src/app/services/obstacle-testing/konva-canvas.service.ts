@@ -35,17 +35,14 @@ export class KonvaCanvasService {
     const layerOrder = new Map<Konva.Layer, number>([
       [this.backgroundLayer, 0],
       [this.gridLayer, 1],
-      [this.hoverLayer, 2],
-      [this.heatmapLayer, 3],
-      [this.obstacleLayer, 4],
+      [this.heatmapLayer, 2],
+      [this.obstacleLayer, 3],
+      [this.hoverLayer, 4],
     ]);
 
     Array.from(layerOrder.entries())
       .sort((a, b) => a[1] - b[1])
       .forEach(([layer]) => this.stage.add(layer));
-
-    // Initialize obstacle layer with transparent background
-    this.initializeObstacleLayer();
 
     // Initialize the transformer
     this.transformer = new Konva.Transformer({
@@ -116,20 +113,6 @@ export class KonvaCanvasService {
       this.backgroundLayer!.draw();
       if (onLoadCallback) onLoadCallback(); // Execute callback when the image is loaded
     };
-  }
-
-  // Add the transparent background to the obstacle layer
-  private initializeObstacleLayer() {
-    const backgroundRect = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: this.stage!.width(),
-      height: this.stage!.height(),
-      fill: 'rgba(0, 0, 0, 0)', // Transparent fill to capture events
-    });
-    
-    this.obstacleLayer!.add(backgroundRect);
-    this.obstacleLayer!.draw();
   }
 
   // Create grid layer based on grid size, scale factor, and grid color

@@ -16,7 +16,6 @@
     *ngFor="let layer of layers"
     [label]="layer.label"
     [layer]="layer.layer"
-    [disabled]="layer.name === 'hover' && !isHeatmapLayerVisible()"
     (toggleVisibility)="toggleLayerVisibility($event)">
   </app-toggle-layer>
 </div>
@@ -34,13 +33,13 @@
     class="simpleHeatCanvas"
     style="display: none;">
   </canvas>
-
+  
   <!-- Tooltip Component -->
   <app-tooltip></app-tooltip>
 
   <!-- Layer List -->
   <app-layer-list
-    [layers]="filteredLayers"
+    [layers]="layers"
     (moveLayerToTop)="moveLayerToTop($event)" 
     (toggleVisibility)="toggleLayerVisibility($event)">
   </app-layer-list>
