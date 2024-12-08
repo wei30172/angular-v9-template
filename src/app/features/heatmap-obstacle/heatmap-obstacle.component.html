@@ -18,6 +18,12 @@
     [layer]="layer.layer"
     (toggleVisibility)="toggleLayerVisibility($event)">
   </app-toggle-layer>
+
+  <!-- Toggle Button for Layer List -->
+  <button
+    (click)="toggleLayerList()" class="toggle-list-btn">
+    {{ isLayerListVisible ? '⊟' : '⊞' }} Layer List
+  </button>
 </div>
 
 <div class="canvas-container">
@@ -42,6 +48,7 @@
 
   <!-- Layer List -->
   <app-layer-list
+    *ngIf="isLayerListVisible"
     [layers]="layers"
     (moveLayerToTop)="moveLayerToTop($event)" 
     (toggleVisibility)="toggleLayerVisibility($event)">

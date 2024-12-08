@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ObstacleType } from 'src/app/models/obstacle.model';
-import { ObstacleFormService } from 'src/app/services/obstacle-testing//obstacle-form.service';
+import { ObstacleFormService } from 'src/app/services/obstacle//obstacle-form.service';
 
 @Component({
   selector: 'app-edit-form',

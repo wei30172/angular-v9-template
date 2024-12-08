@@ -4,8 +4,8 @@ import { takeUntil } from 'rxjs/operators';
 import earcut from "earcut";
 import * as BABYLON from 'babylonjs';
 
-import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
-import { BabylonService } from 'src/app/services/obstacle-testing/babylon.service';
+import { ObstacleGenerationService } from 'src/app/services/obstacle/obstacle-generation.service';
+import { BabylonService } from 'src/app/services/obstacle/babylon.service';
 import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import { CanvasSettings } from 'src/app/config/canvas-settings';
 import {
@@ -21,11 +21,11 @@ import {
 window.earcut = earcut;
 
 @Component({
-  selector: 'app-obstacle-3d',
-  templateUrl: './obstacle-3d.component.html',
-  styleUrls: ['./obstacle-3d.component.scss']
+  selector: 'app-babylon-obstacle',
+  templateUrl: './babylon-obstacle.component.html',
+  styleUrls: ['./babylon-obstacle.component.scss']
 })
-export class Obstacle3DComponent implements OnInit, OnDestroy {
+export class BabylonObstacleComponent implements OnInit, OnDestroy {
   // Dynamic ID for babylonCanvas
   babylonCanvasId: string;
 

@@ -1,0 +1,22 @@
+<div class="heatmap-preview-container">
+  <!-- Loading overlay -->
+  <div class="spinner-overlay" *ngIf="isLoading$ | async">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Heatmap section -->
+  <div class="heatmap-section">
+    <app-heatmap-obstacle></app-heatmap-obstacle>
+  </div>
+
+  <!-- Babylon section -->
+  <div
+    class="babylon-section"
+    [ngClass]="{ 'scaled': is3DSectionExpanded }"
+  >
+    <app-babylon-obstacle></app-babylon-obstacle>
+    <button class="zoom-btn" (click)="zoomBabylonSection()">
+      {{ is3DSectionExpanded ? '➖' : '➕' }}
+    </button>
+  </div>
+</div>

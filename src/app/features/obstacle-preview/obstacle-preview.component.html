@@ -1,4 +1,4 @@
-<div class="editor-container">
+<div class="obstacle-preview-container">
   <!-- Loading overlay -->
   <div class="spinner-overlay" *ngIf="isLoading$ | async">
     <div class="spinner"></div>
@@ -12,11 +12,11 @@
   <!-- Babylon section -->
   <div
     class="babylon-section"
-    [ngClass]="{ 'scaled': isBabylonSectionExpanded }"
+    [ngClass]="{ 'scaled': is3DSectionExpanded }"
   >
-    <app-obstacle-3d></app-obstacle-3d>
+    <app-babylon-obstacle></app-babylon-obstacle>
     <button class="zoom-btn" (click)="zoomBabylonSection()">
-      {{ isBabylonSectionExpanded ? '➖' : '➕' }}
+      {{ is3DSectionExpanded ? '➖' : '➕' }}
     </button>
   </div>
 </div>

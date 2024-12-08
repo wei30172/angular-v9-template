@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
-import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
-import { ObstacleFormService } from 'src/app/services/obstacle-testing//obstacle-form.service';
+import { ObstacleGenerationService } from 'src/app/services/obstacle/obstacle-generation.service';
+import { ObstacleFormService } from 'src/app/services/obstacle//obstacle-form.service';
 import { ShapeManager } from './obstacle-shape-manager';
 import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import { ObstacleType, RectangleObstacle } from 'src/app/models/obstacle.model';

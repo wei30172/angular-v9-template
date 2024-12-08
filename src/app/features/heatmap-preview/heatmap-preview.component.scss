@@ -1,4 +1,4 @@
-.editor-container {
+.heatmap-preview-container {
   display: flex;
 
   .spinner-overlay {
@@ -29,7 +29,7 @@
     }
   }
   
-  .konva-section {
+  .heatmap-section {
     flex: 1;
     box-sizing: border-box;
   }

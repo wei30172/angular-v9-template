@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
+import { ObstacleGenerationService } from 'src/app/services/obstacle/obstacle-generation.service';
 
 @Component({
-  selector: 'app-obstacle-editor',
-  templateUrl: './obstacle-editor.component.html',
-  styleUrls: ['./obstacle-editor.component.scss']
+  selector: 'app-heatmap-preview',
+  templateUrl: './heatmap-preview.component.html',
+  styleUrls: ['./heatmap-preview.component.scss']
 })
-export class ObstacleEditorComponent implements OnInit {
-  isBabylonSectionExpanded = true;
+export class HeatmapPreviewComponent implements OnInit {
+  is3DSectionExpanded = true;
   isLoading$: Observable<boolean>;
 
   constructor(private obstacleGenerationService: ObstacleGenerationService) {}
@@ -21,6 +21,6 @@ export class ObstacleEditorComponent implements OnInit {
   }
 
   zoomBabylonSection() {
-    this.isBabylonSectionExpanded = !this.isBabylonSectionExpanded;
+    this.is3DSectionExpanded = !this.is3DSectionExpanded;
   }
 }

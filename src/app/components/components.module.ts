@@ -9,6 +9,9 @@ import { ShapeControlsComponent } from 'src/app/components/shape-controls/shape-
 import { ObstacleListComponent } from 'src/app/components/obstacle-list/obstacle-list.component';
 import { DeleteIconComponent } from 'src/app/components/delete-icon/delete-icon.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { LayerListComponent } from 'src/app/components/layer-list/layer-list.component';
+import { ToggleLayerComponent } from 'src/app/components/toggle-layer/toggle-layer.component';
+import { HeatmapIndicatorComponent } from 'src/app/components/heatmap-indicator/heatmap-indicator.component';
 
 @NgModule({
   declarations: [
@@ -19,6 +22,9 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
     ObstacleListComponent,
     DeleteIconComponent,
     TooltipComponent,
+    LayerListComponent,
+    ToggleLayerComponent,
+    HeatmapIndicatorComponent,
   ],
   imports: [
     CommonModule,
@@ -32,6 +38,9 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
     ObstacleListComponent,
     DeleteIconComponent,
     TooltipComponent,
+    LayerListComponent,
+    ToggleLayerComponent,
+    HeatmapIndicatorComponent,
   ]
 })
-export class ObstacleComponentsModule { }
+export class ComponentsModule { }

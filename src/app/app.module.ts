@@ -6,9 +6,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { ObstacleTestingModule } from 'src/app/features/obstacle-testing/obstacle-testing.module';
-import { HeatmapTestingModule } from 'src/app/features/heatmap-testing/heatmap-testing.module';
-import { PdfTestingModule } from 'src/app/features/pdf-testing/pdf-testing.module';
+import { FeaturesModule } from 'src/app/features/features.module';
 
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
 
@@ -23,9 +21,7 @@ import { SidebarComponent } from './layout/sidebar/sidebar.component';
     DragDropModule,
     BrowserAnimationsModule,
     AppRoutingModule,
-    ObstacleTestingModule,
-    HeatmapTestingModule,
-    PdfTestingModule
+    FeaturesModule
   ],
   providers: [],
   bootstrap: [AppComponent]

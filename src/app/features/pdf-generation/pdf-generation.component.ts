@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
-import { JsPDFService } from 'src/app/services/pdf-testing/js-pdf.service';
-import { PdfService } from 'src/app/services/pdf-testing/pdf-data.service';
+import { JsPDFService } from 'src/app/services/pdf/js-pdf.service';
+import { PdfService } from 'src/app/services/pdf/pdf-data.service';
 
 @Component({
-  selector: 'app-pdf-test',
-  templateUrl: './pdf-test.component.html',
-  styleUrls: ['./pdf-test.component.scss']
+  selector: 'app-pdf-generation',
+  templateUrl: './pdf-generation.component.html',
+  styleUrls: ['./pdf-generation.component.scss']
 })
-export class PdfTestComponent {
+export class PdfGenerationComponent {
   pageCount = 10;
   isLoading = false;
   generationStatus = '';

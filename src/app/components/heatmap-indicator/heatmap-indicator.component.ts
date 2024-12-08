@@ -6,7 +6,7 @@ import { HeatmapSettings } from 'src/app/config/heatmap-settings';
   templateUrl: './heatmap-indicator.component.html',
   styleUrls: ['./heatmap-indicator.component.scss'],
 })
-export class HeatmapGradientComponent implements OnInit {
+export class HeatmapIndicatorComponent implements OnInit {
   gradientStyle: string = '';
 
   ngOnInit() {

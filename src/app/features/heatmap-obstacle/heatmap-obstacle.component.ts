@@ -3,25 +3,25 @@ import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged } from 'rxjs/operators';
 import Konva from 'konva';
 
-import { ShapeMapping, ObstacleShapeManager } from 'src/app/services/obstacle-testing/shape-service/obstacle-shape-manager';
-import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
-import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
-import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
+import { ShapeMapping, ObstacleShapeManager } from 'src/app/services/obstacle/shape-service/obstacle-shape-manager';
+import { ObstacleGenerationService } from 'src/app/services/obstacle/obstacle-generation.service';
+import { KonvaCanvasService } from 'src/app/services/obstacle/konva-canvas.service';
+import { KonvaEventService } from 'src/app/services/obstacle/konva-event.service';
 import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
 import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { Obstacle } from 'src/app/models/obstacle.model';
-import { HeatmapDataService } from 'src/app/services/heatmap-testing/heatmap-data.service';
-import { SimpleheatService } from 'src/app/services/heatmap-testing/simpleheat.service';
+import { HeatmapDataService } from 'src/app/services/heatmap/heatmap-data.service';
+import { SimpleheatService } from 'src/app/services/heatmap/simpleheat.service';
 import { HeatmapSettings } from 'src/app/config/heatmap-settings';
 import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import { CanvasSettings } from 'src/app/config/canvas-settings';
 
 @Component({
-  selector: 'app-konva-heatmap',
-  templateUrl: './konva-heatmap.component.html',
-  styleUrls: ['./konva-heatmap.component.scss']
+  selector: 'app-heatmap-obstacle',
+  templateUrl: './heatmap-obstacle.component.html',
+  styleUrls: ['./heatmap-obstacle.component.scss']
 })
-export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
+export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestroy {
   // Dynamic ID for konvaHeatmapCanvas
   konvaHeatmapCanvasId: string;
 
@@ -29,6 +29,7 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   simpleHeatCanvasId: string;
 
   layers = [];
+  isLayerListVisible = false; 
 
   private stage: Konva.Stage;
   private obstacleLayer: Konva.Layer;
@@ -423,6 +424,11 @@ export class KonvaHeatmapComponent implements OnInit, AfterViewInit, OnDestroy {
   // Toggle grid visibility
   toggleGrid() {
     this.konvaCanvasService.toggleGridLayer();
+  }
+
+  // Toggle Layer List visibility
+  toggleLayerList() {
+    this.isLayerListVisible = !this.isLayerListVisible;
   }
 
   // Check if the layer is on the top of the layer stack

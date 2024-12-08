@@ -1,19 +1,21 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
-import { ObstacleEditorComponent } from './features/obstacle-testing/obstacle-editor.component';
-import { KonvaObstacleComponent } from './features/obstacle-testing/konva-obstacle.component';
-import { Obstacle3DComponent } from './features/obstacle-testing/obstacle-3d.component';
-import { KonvaHeatmapComponent } from './features/heatmap-testing/konva-heatmap.component';
-import { PdfTestComponent } from './features/pdf-testing/pdf-test.component';
+import { KonvaObstacleComponent } from './features/konva-obstacle/konva-obstacle.component';
+import { BabylonObstacleComponent } from './features/babylon-obstacle/babylon-obstacle.component';
+import { ObstaclePreviewComponent } from './features/obstacle-preview/obstacle-preview.component';
+import { HeatmapObstacleComponent } from './features/heatmap-obstacle/heatmap-obstacle.component';
+import { HeatmapPreviewComponent } from './features/heatmap-preview/heatmap-preview.component';
+import { PdfGenerationComponent } from './features/pdf-generation/pdf-generation.component';
 
 const routes: Routes = [
-  { path: 'obstacle-editor', component: ObstacleEditorComponent },
   { path: 'konva-obstacle', component: KonvaObstacleComponent },
-  { path: 'obstacle-3d', component: Obstacle3DComponent },
-  { path: 'konva-heatmap', component: KonvaHeatmapComponent },
-  { path: 'pdf-test', component: PdfTestComponent },
-  { path: '', redirectTo: '/konva-obstacle', pathMatch: 'full' },
+  { path: 'babylon-obstacle', component: BabylonObstacleComponent },
+  { path: 'obstacle-preview', component: ObstaclePreviewComponent },
+  { path: 'heatmap-obstacle', component: HeatmapObstacleComponent },
+  { path: 'heatmap-preview', component: HeatmapPreviewComponent },
+  { path: 'pdf-generation', component: PdfGenerationComponent },
+  { path: '', redirectTo: '/obstacle-preview', pathMatch: 'full' },
 ];
 
 @NgModule({

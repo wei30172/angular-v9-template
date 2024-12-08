@@ -3,12 +3,12 @@ import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged, debounceTime, withLatestFrom, filter, map } from 'rxjs/operators';
 import Konva from 'konva';
 
-import { ShapeMapping, ObstacleShapeManager, ShapeManager } from 'src/app/services/obstacle-testing/shape-service/obstacle-shape-manager';
-import { ObstacleGenerationService } from 'src/app/services/obstacle-testing/obstacle-generation.service';
-import { ObstacleFormService } from 'src/app/services/obstacle-testing//obstacle-form.service';
-import { CanvasState, CanvasStateService } from 'src/app/services/obstacle-testing/canvas-state.service';
-import { KonvaCanvasService } from 'src/app/services/obstacle-testing/konva-canvas.service';
-import { KonvaEventService } from 'src/app/services/obstacle-testing/konva-event.service';
+import { ShapeMapping, ObstacleShapeManager, ShapeManager } from 'src/app/services/obstacle/shape-service/obstacle-shape-manager';
+import { ObstacleGenerationService } from 'src/app/services/obstacle/obstacle-generation.service';
+import { ObstacleFormService } from 'src/app/services/obstacle//obstacle-form.service';
+import { CanvasState, CanvasStateService } from 'src/app/services/obstacle/canvas-state.service';
+import { KonvaCanvasService } from 'src/app/services/obstacle/konva-canvas.service';
+import { KonvaEventService } from 'src/app/services/obstacle/konva-event.service';
 import { KeyboardEventService } from 'src/app/services/shared/keyboard-event.service';
 import { TooltipService } from 'src/app/services/shared/tooltip.service';
 import { NotificationService } from 'src/app/services/shared/notification.service';
