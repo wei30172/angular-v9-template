@@ -45,7 +45,6 @@ interface TooltipConfig {
   providedIn: 'root',
 })
 export class TooltipService {
-
   // BehaviorSubject to manage tooltip data
   private tooltipSubject = new BehaviorSubject<{
     title: string;

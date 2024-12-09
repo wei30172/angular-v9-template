@@ -1,4 +1,11 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  AfterViewInit,
+  OnDestroy,
+  HostListener,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged } from 'rxjs/operators';
 import Konva from 'konva';
@@ -65,7 +72,8 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     private keyboardEventService: KeyboardEventService,
     private tooltipService: TooltipService,
     private heatmapDataService: HeatmapDataService,
-    private simpleheatService: SimpleheatService
+    private simpleheatService: SimpleheatService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -93,9 +101,8 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     this.subscribeToObstacles(); // Subscribe to obstacle data
     this.registerKeyboardShortcuts(); // Register keyboard shortcuts with actions
     this.loadInitialHeatmap(); // Generate and render initial heatmap
-    
-    // Ensure layers list is rendered after change detection
-    setTimeout(() => this.initializeLayerList()); // Initialize layers list
+    this.initializeLayerList(); // Initialize layers list
+    this.cdr.detectChanges(); // Manually notify Angular to update the view
   }
 
   ngOnDestroy() {

@@ -14,10 +14,7 @@ export class ObstaclePreviewComponent implements OnInit {
   constructor(private obstacleGenerationService: ObstacleGenerationService) {}
 
   ngOnInit() {
-    // Ensure loading state is set after change detection
-    setTimeout(() => {
-      this.isLoading$ = this.obstacleGenerationService.isLoading$;
-    });
+    this.isLoading$ = this.obstacleGenerationService.isLoading$;
   }
 
   zoomBabylonSection() {

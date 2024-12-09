@@ -11,6 +11,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 })
 export class TooltipComponent implements OnInit {
   @ViewChild('tooltip', { static: false }) tooltipElement!: ElementRef<HTMLDivElement>;
+  private tooltipRendered = false;
 
   tooltip$: Observable<{
     title: string;
@@ -23,20 +24,24 @@ export class TooltipComponent implements OnInit {
 
   constructor(
     private tooltipService: TooltipService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit() {
+    // Subscribe to tooltip$ changes to update tooltip position dynamically
     this.tooltip$ = this.tooltipService.tooltip$;
 
     // Subscribe to tooltip$ changes
     this.tooltip$.subscribe((tooltipData) => {
+      this.tooltipRendered = true;
       if (tooltipData) {
-        // Ensure the tooltip is rendered
+        // Ensure the tooltip is rendered after change detection
         setTimeout(() => {
-          if (this.tooltipElement) {
+          if (this.tooltipElement && this.tooltipRendered) {
             const tooltipRect = this.tooltipElement.nativeElement.getBoundingClientRect();
             this.tooltipService.setTooltipDimensions(tooltipRect.width, tooltipRect.height);
+            this.tooltipService.updateTooltipPosition();
+            this.tooltipRendered = false;
           }
         });
       }
@@ -48,13 +53,13 @@ export class TooltipComponent implements OnInit {
     this.isExpanded = !this.isExpanded;
     this.tooltipService.setIsPinned(this.isExpanded);
 
-    // Ensure the tooltip is rendered
+    // Ensure the tooltip is rendered after change detection
     setTimeout(() => {
       if (this.tooltipElement) {
         const tooltipRect = this.tooltipElement.nativeElement.getBoundingClientRect();
         this.tooltipService.setTooltipDimensions(tooltipRect.width, tooltipRect.height);
+        this.tooltipService.updateTooltipPosition();
       }
-      this.tooltipService.updateTooltipPosition();
     });
   }
 
