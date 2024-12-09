@@ -1,0 +1,10 @@
+<div class="dropdown-selector">
+  <select 
+    id="dropdownSelector" 
+    aria-label="Select Option" 
+    [value]="selectedOption" 
+    (change)="onSelect($event)">
+    <option value="" disabled [selected]="!selectedOption">{{ placeholder }}</option>
+    <option *ngFor="let option of options" [value]="option.value">{{ option.label }}</option>
+  </select>
+</div>

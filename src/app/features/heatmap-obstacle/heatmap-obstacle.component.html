@@ -19,10 +19,31 @@
     (toggleVisibility)="toggleLayerVisibility($event)">
   </app-toggle-layer>
 
+  <!-- Heatmap ID Selector -->
+  <app-dropdown-selector
+    [options]="heatmapOptions" 
+    [selectedOption]="currentHeatmapId" 
+    [placeholder]="'Select Heatmap'"
+    (optionChange)="switchHeatmapId($event)">
+  </app-dropdown-selector>
+
+  <!-- Heatmap Height Selector -->
+  <app-dropdown-selector
+    [options]="heatmapHeightOptions" 
+    [selectedOption]="heatmapHeight" 
+    [placeholder]="'Select Height'"
+    (optionChange)="switchHeatmapHeight($event)">
+  </app-dropdown-selector>
+
   <!-- Toggle Button for Layer List -->
   <button
     (click)="toggleLayerList()" class="toggle-list-btn">
-    {{ isLayerListVisible ? '⊟' : '⊞' }} Layer List
+    {{ isLayerListVisible ? 'Hide' : 'Show' }} Layer List
+  </button>
+
+  <!-- Toggle Button for 3D View -->
+  <button (click)="toggle3DView()" class="toggle-preview-btn">
+    {{ is3DViewVisible ? 'Hide' : 'Show' }} 3D View
   </button>
 </div>
 
@@ -53,4 +74,10 @@
     (moveLayerToTop)="moveLayerToTop($event)" 
     (toggleVisibility)="toggleLayerVisibility($event)">
   </app-layer-list>
+
+  <app-babylon-obstacle
+    *ngIf="is3DViewVisible"
+    [heatmapImageUrl]="heatmapImageUrl"
+    [heatmapHeight]="heatmapHeight"
+  ></app-babylon-obstacle>
 </div>

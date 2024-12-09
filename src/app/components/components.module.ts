@@ -12,6 +12,7 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { LayerListComponent } from 'src/app/components/layer-list/layer-list.component';
 import { ToggleLayerComponent } from 'src/app/components/toggle-layer/toggle-layer.component';
 import { HeatmapIndicatorComponent } from 'src/app/components/heatmap-indicator/heatmap-indicator.component';
+import { DropdownSelectorComponent } from 'src/app/components/dropdown-selector/dropdown-selector.component';
 
 @NgModule({
   declarations: [
@@ -25,6 +26,7 @@ import { HeatmapIndicatorComponent } from 'src/app/components/heatmap-indicator/
     LayerListComponent,
     ToggleLayerComponent,
     HeatmapIndicatorComponent,
+    DropdownSelectorComponent,
   ],
   imports: [
     CommonModule,
@@ -41,6 +43,7 @@ import { HeatmapIndicatorComponent } from 'src/app/components/heatmap-indicator/
     LayerListComponent,
     ToggleLayerComponent,
     HeatmapIndicatorComponent,
+    DropdownSelectorComponent,
   ]
 })
 export class ComponentsModule { }

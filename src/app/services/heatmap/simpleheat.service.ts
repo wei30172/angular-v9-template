@@ -28,6 +28,9 @@ export class SimpleheatService {
     const offscreenCanvas = document.createElement('canvas');
     offscreenCanvas.width = scaledWidth;
     offscreenCanvas.height = scaledHeight;
+    
+    const ctx = offscreenCanvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
+    if (!ctx) return;
 
     const adjustedRadius = radius * scale;
     const adjustedMax = max * scale;
@@ -41,14 +44,17 @@ export class SimpleheatService {
     this.offscreenCanvas = offscreenCanvas;
     this.originalCanvas = canvas;
   }
-
-  // Render the heatmap on the canvas using data from HeatmapDataService
+  
+  // Render the heatmap on the canvas
   // Scales down data points based on the scale factor
-  renderHeatmap(scale: number = HeatmapSettings.DefaultScale) {
+  renderHeatmap(
+    heatmapData: Map<number, Map<number, number>>,
+    scale: number = HeatmapSettings.DefaultScale,
+  ) {
     const points = [];
-    // Converts pixelData to an array of points with [x, y, intensity] format
+    // Converts heatmapData to an array of points with [x, y, intensity] format
     // Map forEach: first param is value, second is key
-    this.heatmapDataService.pixelData.forEach((row, x) => {
+    heatmapData.forEach((row, x) => {
       row.forEach((intensity, y) => {
         points.push([x, y, intensity / scale]);
       });
@@ -57,19 +63,21 @@ export class SimpleheatService {
     this.heatmapInstance?.draw();
 
     // Draws the offscreen canvas content onto the main canvas, resizing to fit
-    const ctx = this.originalCanvas.getContext('2d');
-    ctx?.clearRect(0, 0, this.originalCanvas.width, this.originalCanvas.height);
-    ctx?.drawImage(
-      this.offscreenCanvas,
-      0,
-      0,
-      this.offscreenCanvas.width,
-      this.offscreenCanvas.height,
-      0,
-      0,
-      this.originalCanvas.width,
-      this.originalCanvas.height
-    );
+    const ctx = this.originalCanvas.getContext('2d') as CanvasRenderingContext2D;
+    if (ctx) {
+      ctx.clearRect(0, 0, this.originalCanvas.width, this.originalCanvas.height);
+      ctx.drawImage(
+        this.offscreenCanvas,
+        0,
+        0,
+        this.offscreenCanvas.width,
+        this.offscreenCanvas.height,
+        0,
+        0,
+        this.originalCanvas.width,
+        this.originalCanvas.height
+      );
+    }
   }
 
   // Clear the heatmap data

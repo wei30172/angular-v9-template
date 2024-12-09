@@ -7,8 +7,8 @@ export class PdfService {
 
   private imageCache: { [url: string]: string } = {}; // Cache for base64 images
 
-  // Generate test data for PDF with mixed content types
-  async generateTestData(pageCount: number, maxParagraphs: number = 3, maxImages: number = 2, maxTables: number = 1): Promise<{ title: string; content: string; imageBase64?: string }[]> {
+  // Generate data for PDF with mixed content types
+  async generatePDFData(pageCount: number, maxParagraphs: number = 3, maxImages: number = 2, maxTables: number = 1): Promise<{ title: string; content: string; imageBase64?: string }[]> {
     const pages = [];
 
     for (let i = 0; i < pageCount; i++) {
@@ -63,7 +63,7 @@ export class PdfService {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
         ctx?.drawImage(img, 0, 0);
         resolve(canvas.toDataURL('image/png'));
       };

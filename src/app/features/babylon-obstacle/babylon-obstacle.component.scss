@@ -1,12 +1,12 @@
 .babylon-canvas-container {
-  width: 100%;
-  height: 100%;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 
   .babylonCanvas {
-    width: 100%;
-    height: 100%;
+    width: 640px;
+    height: 640px;
+    display: block;
   }
 }

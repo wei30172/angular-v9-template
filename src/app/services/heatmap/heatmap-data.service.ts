@@ -5,7 +5,7 @@ import { HeatmapSettings } from 'src/app/config/heatmap-settings';
   providedIn: 'root'
 })
 export class HeatmapDataService {
-  pixelData: Map<number, Map<number, number>> = new Map(); // Nested Map for efficient lookup, stores intensity for each (x, y) coordinate point.
+  heatmapData: Map<number, Map<number, number>> = new Map(); // Nested Map for efficient lookup, stores intensity for each (x, y) coordinate point.
   private cache: Map<string, number> = new Map(); // Cache for already-calculated areas
 
   // Generate heatmap data based on canvas width and height
@@ -14,7 +14,9 @@ export class HeatmapDataService {
     height: number,
     scale: number = HeatmapSettings.DefaultScale,
     step: number = 2,  // Step size for iterating around each heat point
-  ): void {
+  ): Map<number, Map<number, number>> {
+    this.clearHeatmapData();
+
     const scaledWidth = Math.round(width * scale);
     const scaledHeight = Math.round(height * scale);
 
@@ -42,26 +44,28 @@ export class HeatmapDataService {
                 this.cache.set(key, influence);
               }
 
-              // Store in pixelData map
+              // Store in heatmapData map
               this.setPixelIntensity(x, y, this.cache.get(key)!);
             }
           }
         }
       }
     });
+
+    return this.heatmapData;
   }
   
-  // Set intensity in pixelData with nested Maps
+  // Set intensity in heatmapData with nested Maps
   private setPixelIntensity(x: number, y: number, intensity: number): void {
-    if (!this.pixelData.has(x)) {
-      this.pixelData.set(x, new Map<number, number>());
+    if (!this.heatmapData.has(x)) {
+      this.heatmapData.set(x, new Map<number, number>());
     }
-    this.pixelData.get(x)!.set(y, intensity);
+    this.heatmapData.get(x)!.set(y, intensity);
   }
 
   // Retrieve intensity at a specific pixel
   getPixelIntensity(x: number, y: number): number | null {
-    return this.pixelData.get(x)?.get(y) || null;
+    return this.heatmapData.get(x)?.get(y) || null;
   }
 
   // Retrieve intensity at a specific pixel, adjusting for scale
@@ -118,7 +122,7 @@ export class HeatmapDataService {
 
   // Clear pixel data and cache when necessary
   clearHeatmapData() {
-    this.pixelData.clear();
+    this.heatmapData.clear();
     this.cache.clear();
   }
 }

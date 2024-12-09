@@ -69,10 +69,10 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     // Initialize canvas and layer
     this.initializeCanvas();
 
-    // Load the background image for the canvas
+    // Mock background image: Load the background image for the canvas
     this.konvaCanvasService.loadBackgroundImage(CanvasSettings.BackgroundImageUrl);
 
-    // Generate random obstacles
+    // Mock API: Generate random obstacles
     this.obstacleGenerationService.generateRandomObstacles(
       ObstacleSettings.DefaultObstacleCount,
       this.stage.width(),
@@ -141,7 +141,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     
     const { manager, shape } = result;
     manager.updateFromForm(shape, values);
-    this.obstacleLayer.batchDraw();
+    shape.draw();
   }
 
   // Subscribe to obstacle list from service
@@ -154,14 +154,6 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
       )
       .subscribe(obstacles => {
         this.renderObstacles(obstacles); // Render or update obstacles on the canvas
-      });
-    
-    this.obstacleGenerationService.obstacleUpdates$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(updatedObstacle => {
-        if (updatedObstacle) {
-          this.renderObstacle(updatedObstacle);
-        }
       });
   }
 
@@ -248,7 +240,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
     // Perform the provided action with the manager and shape
     action(manager, shape);
-    this.obstacleLayer.batchDraw();
+    shape.draw();
 
     this.showObstacleTooltip(shape);
   }
@@ -348,17 +340,22 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   
   // Handles obstacle selection and updates its transform settings and canvas state
   private selectAndUpdateObstacle(obstacle: Konva.Shape) {
+    // Enable dragging for the selected obstacle
     obstacle.draggable(true);
+
+    // Set the selected obstacle in the transformer
     this.transformer.nodes([obstacle]);
     this.transformer.moveToTop();
     obstacle.moveToTop();
 
+    // Update the currentObstacle reference
     this.currentObstacle = obstacle;
-    this.obstacleLayer.draw();
 
+    // Unsubscribe from previous transformer events
     this.transformer.off('transformstart');
     this.transformer.off('transformend');
 
+    // Attach new transformer event listeners
     this.transformer.on('transformstart', () => {
       this.canvasStateManager.setState(CanvasState.Transforming);
     });
@@ -371,7 +368,6 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Deselect transformer and hide the delete icon
   private deselectObstacle() {
     this.transformer.nodes([]);
-    this.obstacleLayer.batchDraw();
     
     this.transformer.off('transformstart');
     this.transformer.off('transformend');
@@ -524,21 +520,22 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Render or update obstacles on the canvas
   private renderObstacles(obstaclesData: Obstacle[]) {
-    obstaclesData.forEach(obstacleData => {
-      this.renderObstacle(obstacleData);
-    });
-    this.obstacleLayer.batchDraw();
-  }
+    let requiresFullLayerRedraw = false;
 
-  // Render or update obstacle on the canvas
-  private renderObstacle(obstacleData: Obstacle) {
-    const obstacle = this.findObstacleById(obstacleData.id);
+    obstaclesData.forEach(obstacleData => {
+      const obstacle = this.findObstacleById(obstacleData.id);
       if (obstacle) {
         this.updateObstacleWithManager(obstacle, obstacleData);
+        obstacle.draw();
       } else {
         this.createObstacleWithManager(obstacleData);
+        requiresFullLayerRedraw = true;
       }
-    this.obstacleLayer.batchDraw();
+    });
+    
+    if (requiresFullLayerRedraw) {
+      this.obstacleLayer.batchDraw();
+    }
   }
 
   // Create new obstacle using ManagerService
@@ -625,9 +622,9 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     
     // Update the obstacle data
     manager.updateObstacleData(shape);
+    shape.draw();
 
     this.canvasStateManager.setState(CanvasState.Idle);
-    this.obstacleLayer.draw();
   }
 
   // Mouse hovers over a obstacle, displaying the tooltip
@@ -637,8 +634,8 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
       stroke: 'rgba(255, 255, 255, 0.8)',
       strokeWidth: 1,
     });
+
     this.showObstacleTooltip(obstacle);
-    this.obstacleLayer.batchDraw();
   }
 
   // Mouse leaves a obstacle, hiding the tooltip

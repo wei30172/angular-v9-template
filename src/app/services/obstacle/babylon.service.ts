@@ -51,8 +51,8 @@ export class BabylonService {
   }
 
   // Load a background image as ground texture in the scene
-  loadBackgroundImage(
-    imageUrl: string,
+  addBackgroundTextureToGround(
+    backgroundImageUrl: string,
     canvasWidth: number,
     canvasHeight: number,
   ): void {
@@ -64,10 +64,10 @@ export class BabylonService {
       { width: canvasWidth, height: canvasHeight },
       this.scene
     );
+
+    // Create background material
     const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", this.scene);
-    
-    // Load texture and apply scaling to match 2D orientation
-    const texture = new BABYLON.Texture(imageUrl, this.scene);
+    const texture = new BABYLON.Texture(backgroundImageUrl, this.scene);
     texture.uScale = -1;
     texture.vScale = -1;
     groundMaterial.diffuseTexture = texture;
@@ -75,9 +75,55 @@ export class BabylonService {
     // Disable reflections by setting specular color to black
     groundMaterial.specularColor = BABYLON.Color3.Black();
 
-    // Position ground at base level
+    // Set material to ground
     ground.material = groundMaterial;
-    ground.position.y = 0; // Position ground at base level
+
+    // Position ground at base level
+    ground.position.y = 0; 
+  }
+
+  // Load a heatmap image as ground texture in the scene
+  addHeatmapTextureToGround(
+    heatmapImageUrl: string,
+    canvasWidth: number,
+    canvasHeight: number,
+    heatmapHeight: number = 10,
+  ) {
+    if (!this.scene) return;
+  
+    // Check and remove the existing heatmap ground if it exists
+    const existingGround = this.scene.getMeshByName("heatmapGround");
+    if (existingGround) {
+      existingGround.dispose(); 
+    }
+
+    // Create the ground and set the material with heatmap texture
+    const ground = BABYLON.MeshBuilder.CreateGround(
+      "heatmapGround",
+      { width: canvasWidth, height: canvasHeight },
+      this.scene
+    );
+
+    // Create heatmap material
+    const heatmapMaterial = new BABYLON.StandardMaterial("heatmapMaterial", this.scene);
+    const texture = new BABYLON.Texture(heatmapImageUrl, this.scene);
+    texture.uScale = -1;
+    texture.vScale = -1;
+    texture.hasAlpha = true
+    heatmapMaterial.diffuseTexture = texture
+  
+    // Configure material transparency and depth settings
+    heatmapMaterial.useAlphaFromDiffuseTexture = true;
+    heatmapMaterial.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+
+    // Disable reflections by setting specular color to black
+    heatmapMaterial.specularColor = BABYLON.Color3.Black();
+
+    // Set material to ground
+    ground.material = heatmapMaterial;
+  
+    // Set ground position based on heatmapHeight
+    ground.position.y = heatmapHeight;
   }
 
   // Get the Babylon scene instance
@@ -88,5 +134,5 @@ export class BabylonService {
   // Dispose of the Babylon engine and scene resources
   disposeEngine(): void {
     this.engine?.dispose();
-  }  
+  }
 }

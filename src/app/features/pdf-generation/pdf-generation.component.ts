@@ -22,13 +22,14 @@ export class PdfGenerationComponent {
     this.generationStatus = `Preparing test data for PDF generation...`;
     
     try {
-      const testData = await this.pdfService.generateTestData(this.pageCount);
+      // Mock API: Generate random pdf data
+      const pdfData = await this.pdfService.generatePDFData(this.pageCount);
       this.generationStatus = 'Test data prepared successfully!';
 
       const startTime = performance.now();
       this.generationStatus = `Generating PDF with ${tool}...`;
 
-      await this.jsPDFService.generatePDF(testData);
+      await this.jsPDFService.generatePDF(pdfData);
       const endTime = performance.now();
       this.generationStatus = `${tool} PDF generated in ${(endTime - startTime).toFixed(2)} milliseconds.`;
     } catch (error) {

@@ -16,9 +16,7 @@ export class ObstacleGenerationService {
   // Observable for external components to access obstacle data
   private obstaclesSubject = new BehaviorSubject<Obstacle[]>([]);
   public obstacles$ = this.obstaclesSubject.asObservable();
-  private obstacleUpdatesSubject = new BehaviorSubject<Obstacle | null>(null);
-  public obstacleUpdates$ = this.obstacleUpdatesSubject.asObservable();
-
+  
   // Spinner loading state
   private loadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.loadingSubject.asObservable();
@@ -169,9 +167,9 @@ export class ObstacleGenerationService {
 
         // If the maximum number of iterations is exceeded, force add the obstacle
         if (iterations > maxIterations) {
-          console.log(
-            `Max iterations ${maxIterations} reached for obstacle. Adding obstacle ${obstacle.id} regardless of overlap.`
-          );
+          // console.log(
+          //   `Max iterations ${maxIterations} reached for obstacle. Adding obstacle ${obstacle.id} regardless of overlap.`
+          // );
           this.obstacleMap.set(obstacle.id, obstacle);
           this.collisionService.addObstacleToGridMap(obstacle);
           break;
@@ -215,7 +213,7 @@ export class ObstacleGenerationService {
     if (obstacle) {
       const updatedObstacle = { ...obstacle, ...updatedProps };
       this.obstacleMap.set(id, updatedObstacle);
-      this.obstacleUpdatesSubject.next(updatedObstacle);
+      this.updateObstaclesSubject();
     }
     // const obstacle = this.obstacleMap.get(id);
     // if (obstacle) {

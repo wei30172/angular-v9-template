@@ -15,6 +15,7 @@ import { SimpleheatService } from 'src/app/services/heatmap/simpleheat.service';
 import { HeatmapSettings } from 'src/app/config/heatmap-settings';
 import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import { CanvasSettings } from 'src/app/config/canvas-settings';
+import { DropdownOption } from 'src/app/components/dropdown-selector/dropdown-selector.component';
 
 @Component({
   selector: 'app-heatmap-obstacle',
@@ -28,8 +29,26 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
   // Dynamic ID for simpleHeatCanvas
   simpleHeatCanvasId: string;
 
-  layers = [];
-  isLayerListVisible = false; 
+  // Heatmap ID options
+  heatmapOptions: DropdownOption<string>[] = [
+    { label: 'Heatmap 1', value: 'heatmap1' },
+    { label: 'Heatmap 2', value: 'heatmap2' },
+    { label: 'Heatmap 3', value: 'heatmap3' },
+  ];
+  currentHeatmapId: string = 'heatmap1';
+
+  // Heatmap height options
+  heatmapHeightOptions: DropdownOption<number>[] = [
+    { label: '10', value: 10 },
+    { label: '30', value: 30 },
+    { label: '50', value: 50 },
+  ];
+  heatmapHeight: number = 10;
+  
+  heatmapImageUrl = null // Stores the current heatmap image URL
+  layers = []; // List of layers
+  isLayerListVisible = true;
+  is3DViewVisible = false;
 
   private stage: Konva.Stage;
   private obstacleLayer: Konva.Layer;
@@ -60,10 +79,10 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     this.initializeCanvas();
     this.initHoverTarget();
 
-    // Load the background image for the canvas
+    // Mock background image: Load the background image for the canvas
     this.konvaCanvasService.loadBackgroundImage(CanvasSettings.BackgroundImageUrl);
     
-    // Generate random obstacles
+    // Mock API: Generate random obstacles
     this.obstacleGenerationService.generateRandomObstacles(
       ObstacleSettings.DefaultObstacleCount,
       this.stage.width(),
@@ -73,12 +92,10 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     this.bindCanvasEvents(); // Bind necessary canvas events
     this.subscribeToObstacles(); // Subscribe to obstacle data
     this.registerKeyboardShortcuts(); // Register keyboard shortcuts with actions
-    this.generateAndRenderHeatmap(); // Render heatmap
+    this.loadInitialHeatmap(); // Generate and render initial heatmap
     
-    // Ensure layers list is rendered
-    setTimeout(() => {
-      this.initializeLayerList(); // Initialize layers list
-    });
+    // Ensure layers list is rendered after change detection
+    setTimeout(() => this.initializeLayerList()); // Initialize layers list
   }
 
   ngOnDestroy() {
@@ -157,7 +174,6 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
   // Hide hover target
   private handleMouseLeave() {
     this.hoverTarget.visible(false);
-    this.hoverLayer.batchDraw();
   }
 
   // Handle zooming with the mouse wheel
@@ -188,8 +204,49 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     ]);
   }
 
-  // Generate and render heatmap
-  private generateAndRenderHeatmap() {
+  // Generate and render initial heatmap
+  private loadInitialHeatmap() {
+    // Mock API: Generate heatmap data that covers the entire stage area
+    const heatmapData = this.heatmapDataService.generateHeatmapData(
+      this.stage.width(),
+      this.stage.height(),
+    );
+
+    // Render heat map
+    this.renderHeatmap(heatmapData, true);
+  }
+
+  // Switch heat map Id
+  switchHeatmapId(newHeatmapId: string) {
+    this.currentHeatmapId = newHeatmapId;
+    // console.log(`Switched to heatmap: ${newHeatmapId}`);
+
+    // Mock API: Generate heatmap data that covers the entire stage area
+    const newHeatmapData = this.heatmapDataService.generateHeatmapData(
+      this.stage.width(),
+      this.stage.height(),
+    );
+
+    // Render heat map
+    this.renderHeatmap(newHeatmapData, false);
+  }
+
+  // Switch heat map height
+  switchHeatmapHeight(newHeight: number) {
+    this.heatmapHeight = newHeight;
+    // console.log('Selected Heatmap Height:', newHeight);
+
+    // Show 3D View
+    if (this.is3DViewVisible === false) {
+      this.toggle3DView();
+    }
+  }
+
+  // Render heat map
+  private renderHeatmap(
+    heatmapData:  Map<number, Map<number, number>>,
+    initialize: boolean
+  ) {
     // Get the canvas element by the dynamically generated ID
     const heatmapCanvas = document.getElementById(this.simpleHeatCanvasId) as unknown as HTMLCanvasElement;
 
@@ -197,27 +254,22 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     heatmapCanvas.width = this.stage.width();
     heatmapCanvas.height = this.stage.height();
 
-    // Generate heatmap data that covers the entire stage area
-    this.heatmapDataService.generateHeatmapData(
-      this.stage.width(),
-      this.stage.height(),
-    );
-    
-    // Initialize Simpleheat on the heatmap canvas
-    this.simpleheatService.initializeHeatmap(heatmapCanvas);
-    this.simpleheatService.renderHeatmap();
-
-    // Convert the heatmap canvas to a PNG image URL
-    const heatmapImageUrl = heatmapCanvas.toDataURL('image/png');
-    
-    // Add the generated heatmap as a layer to the Konva stage
-    this.konvaCanvasService.addHeatmapLayer(heatmapImageUrl);
-
-    if (this.heatmapLayer) {
+    if (initialize) {
+      // Initialize the heatmap instance
+      this.simpleheatService.initializeHeatmap(heatmapCanvas);
       this.heatmapLayer.on('mousemove', () => this.handleHeatmapMouseMove());
     }
-  }
+    
+    // Render heatmap data
+    this.simpleheatService.renderHeatmap(heatmapData);
 
+    // Convert the heatmap canvas to a PNG image URL
+    this.heatmapImageUrl = heatmapCanvas.toDataURL('image/png');
+    
+    // Add the generated heatmap as a layer to the Konva stage
+    this.konvaCanvasService.addHeatmapLayer(this.heatmapImageUrl);
+  }
+  
   // Display intensity data on hover
   private handleHeatmapMouseMove() {
     const pointerPosition = this.heatmapLayer.getRelativePointerPosition();
@@ -244,11 +296,9 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     const averageIntensity = this.heatmapDataService.getAverageIntensityInRadius(gridX, gridY, radius) ?? 0;
 
     const title = `Intensity: ${averageIntensity.toFixed(2)}`;
-    const description = { X: gridX, Y: gridY };
 
     this.tooltipService.showTooltip({
       title,
-      description,
       targetBounds: { x: gridX, y: gridY },
       container: this.stage.container(),
       offset: 50,
@@ -256,17 +306,24 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     });
   }
 
-  // Render or update obstacles on the canvas based on the latest data
+  // Render or update obstacles on the canvas
   private renderObstacles(obstaclesData: Obstacle[]) {
+    let requiresFullLayerRedraw = false;
+
     obstaclesData.forEach(obstacleData => {
       const obstacle = this.findObstacleById(obstacleData.id);
       if (obstacle) {
         this.updateObstacleWithManager(obstacle, obstacleData);
+        obstacle.draw();
       } else {
         this.createObstacleWithManager(obstacleData);
+        requiresFullLayerRedraw = true;
       }
     });
-    this.obstacleLayer.batchDraw();
+    
+    if (requiresFullLayerRedraw) {
+      this.obstacleLayer.batchDraw();
+    }
   }
 
   // Create new obstacle using ManagerService
@@ -326,7 +383,6 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     });
 
     this.showObstacleTooltip(obstacle);
-    this.obstacleLayer.batchDraw();
   }
 
   // Hide the tooltip when the mouse leaves the obstacle
@@ -426,9 +482,20 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     this.konvaCanvasService.toggleGridLayer();
   }
 
-  // Toggle Layer List visibility
+  // Toggle Layer list visibility
   toggleLayerList() {
     this.isLayerListVisible = !this.isLayerListVisible;
+    if (this.isLayerListVisible) {
+      this.is3DViewVisible = false;
+    }
+  }
+  
+  // Toggle 3D View visibility
+  toggle3DView() {
+    this.is3DViewVisible = !this.is3DViewVisible;
+    if (this.is3DViewVisible) {
+      this.isLayerListVisible = false;
+    }
   }
 
   // Check if the layer is on the top of the layer stack
@@ -444,6 +511,8 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
 
   // Toggle layer visibility
   toggleLayerVisibility(layer: Konva.Layer) {
+    this.isLayerListVisible = true;
+    this.is3DViewVisible = false;
     this.tooltipService.destroyTooltip();
     this.konvaCanvasService.toggleLayerVisibility(layer);
   }  

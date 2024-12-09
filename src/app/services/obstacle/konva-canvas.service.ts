@@ -98,7 +98,7 @@ export class KonvaCanvasService {
   // Load background image into background layer
   loadBackgroundImage(imageUrl: string, onLoadCallback?: () => void) {
     if (!this.stage) {
-      throw new Error('Stage is not initialized. Please initialize the stage first.');
+      console.warn('Stage is not initialized. Please initialize the stage first.');
     }
 
     const image = new Image();
@@ -110,9 +110,11 @@ export class KonvaCanvasService {
         width: this.stage!.width(),
         height: this.stage!.height(),
       });
-      this.backgroundLayer!.add(konvaBackgroundImage);
-      this.backgroundLayer!.draw();
-      if (onLoadCallback) onLoadCallback(); // Execute callback when the image is loaded
+      this.backgroundLayer.add(konvaBackgroundImage);
+      this.backgroundLayer.draw();
+
+      // Execute callback when the image is loaded
+      if (onLoadCallback) onLoadCallback();
     };
   }
 
@@ -124,7 +126,7 @@ export class KonvaCanvasService {
     strokeWidth: number = 0.2
   ) {
     if (!this.gridLayer) {
-      throw new Error('Grid layer is not initialized.');
+      console.warn('Grid layer is not initialized.');
     }
   
     const width = this.stage.width();
@@ -156,14 +158,13 @@ export class KonvaCanvasService {
     }
   
     this.gridLayer.visible(false);
-    this.gridLayer.draw(); // Re-render the grid layer
+    this.gridLayer.draw();
   }
 
   // Toggle layer visibility
   toggleLayerVisibility(layer: Konva.Layer) {
     layer?.visible(!layer.visible());
     layer?.draw();
-    this.stage!.batchDraw();
   }
 
   // Toggle grid visibility
@@ -296,7 +297,6 @@ export class KonvaCanvasService {
 
     const currentZoom = this.stage.scaleX();
     this.constrainStagePosition(newPosition, currentZoom);
-    this.stage.batchDraw();
   }
 
   // Get the current scale and pan state of the canvas
@@ -336,7 +336,7 @@ export class KonvaCanvasService {
   // Add heatmap layer
   addHeatmapLayer(imageUrl: string) {
     if (!this.heatmapLayer) {
-      throw new Error('Heatmap layer is not initialized.');
+      console.warn('Heatmap layer is not initialized.');
     }
 
     const heatmapImage = new Image();
@@ -369,7 +369,7 @@ export class KonvaCanvasService {
     }
   ): Konva.Node {
     if (!this.hoverLayer) {
-      throw new Error('Hover layer is not initialized.');
+      console.warn('Hover layer is not initialized.');
     }
 
     const {
@@ -421,7 +421,7 @@ export class KonvaCanvasService {
     this.hoverLayer.add(hoverTarget);
     this.hoverLayer.draw();
 
-    return hoverTarget; // Return the hover target for external control
+    return hoverTarget;
   }
 
   // Clear stage and layers

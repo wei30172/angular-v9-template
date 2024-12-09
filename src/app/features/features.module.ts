@@ -6,7 +6,6 @@ import { KonvaObstacleComponent } from './konva-obstacle/konva-obstacle.componen
 import { BabylonObstacleComponent } from './babylon-obstacle/babylon-obstacle.component';
 import { ObstaclePreviewComponent } from './obstacle-preview/obstacle-preview.component';
 import { HeatmapObstacleComponent } from './heatmap-obstacle/heatmap-obstacle.component';
-import { HeatmapPreviewComponent } from './heatmap-preview/heatmap-preview.component';
 import { PdfGenerationComponent } from './pdf-generation/pdf-generation.component';
 
 @NgModule({
@@ -15,7 +14,6 @@ import { PdfGenerationComponent } from './pdf-generation/pdf-generation.componen
     KonvaObstacleComponent,
     BabylonObstacleComponent,
     HeatmapObstacleComponent,
-    HeatmapPreviewComponent,
     PdfGenerationComponent,
   ],
   imports: [
@@ -27,7 +25,6 @@ import { PdfGenerationComponent } from './pdf-generation/pdf-generation.componen
     KonvaObstacleComponent,
     BabylonObstacleComponent,
     HeatmapObstacleComponent,
-    HeatmapPreviewComponent,
     PdfGenerationComponent,
   ]
 })
