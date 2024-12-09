@@ -1,8 +1,9 @@
 import { Component, OnInit, ElementRef, ViewChild, ViewEncapsulation } from '@angular/core';
-import { ThemeType, TooltipService } from 'src/app/services/shared/tooltip.service';
-import { Observable } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Observable, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
+import { ThemeType, TooltipService } from 'src/app/services/shared/tooltip.service';
 @Component({
   selector: 'app-tooltip',
   templateUrl: './tooltip.component.html',
@@ -11,8 +12,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 })
 export class TooltipComponent implements OnInit {
   @ViewChild('tooltip', { static: false }) tooltipElement!: ElementRef<HTMLDivElement>;
-  private tooltipRendered = false;
-
+  private destroy$ = new Subject<void>(); // Notification subscription destroyed
+  
   tooltip$: Observable<{
     title: string;
     description?: string | Array<string | Record<string, unknown>> | Record<string, unknown>;
@@ -32,20 +33,26 @@ export class TooltipComponent implements OnInit {
     this.tooltip$ = this.tooltipService.tooltip$;
 
     // Subscribe to tooltip$ changes
-    this.tooltip$.subscribe((tooltipData) => {
-      this.tooltipRendered = true;
-      if (tooltipData) {
-        // Ensure the tooltip is rendered after change detection
-        setTimeout(() => {
-          if (this.tooltipElement && this.tooltipRendered) {
-            const tooltipRect = this.tooltipElement.nativeElement.getBoundingClientRect();
-            this.tooltipService.setTooltipDimensions(tooltipRect.width, tooltipRect.height);
-            this.tooltipService.updateTooltipPosition();
-            this.tooltipRendered = false;
-          }
-        });
-      }
-    });
+    this.tooltip$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((tooltipData) => {
+        if (tooltipData) {
+          // Perform the operation after the next render
+          requestAnimationFrame(() => {
+            const tooltipRendered = this.tooltipService.getTooltipRendered();
+            if (this.tooltipElement && tooltipRendered) {
+              const tooltipRect = this.tooltipElement.nativeElement.getBoundingClientRect();
+              const currentWidth = this.tooltipService.getTooltipWidth();
+              const currentHeight = this.tooltipService.getTooltipHeight();
+
+              if (tooltipRect.width !== currentWidth || tooltipRect.height !== currentHeight) {
+                this.tooltipService.setTooltipDimensions(tooltipRect.width, tooltipRect.height);
+                this.tooltipService.updateTooltipPosition();
+              }
+            }
+          });
+        }
+      });
   }
 
   // Toggle description expand/collapse
@@ -53,8 +60,8 @@ export class TooltipComponent implements OnInit {
     this.isExpanded = !this.isExpanded;
     this.tooltipService.setIsPinned(this.isExpanded);
 
-    // Ensure the tooltip is rendered after change detection
-    setTimeout(() => {
+    // Perform the operation after the next render
+    requestAnimationFrame(() => {
       if (this.tooltipElement) {
         const tooltipRect = this.tooltipElement.nativeElement.getBoundingClientRect();
         this.tooltipService.setTooltipDimensions(tooltipRect.width, tooltipRect.height);

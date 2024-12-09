@@ -36,7 +36,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   private copiedObstacle: Partial<Obstacle> | null = null;
   private startX: number | null = null;
   private startY: number | null = null;
-  private destroy$ = new Subject<void>();
+  private destroy$ = new Subject<void>(); // Notification subscription destroyed
   private canvasStateManager = new CanvasStateService();
 
   constructor(

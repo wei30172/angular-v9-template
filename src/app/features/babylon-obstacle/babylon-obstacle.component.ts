@@ -38,6 +38,7 @@ export class BabylonObstacleComponent implements OnInit, OnChanges, AfterViewIni
   // Local copy of obstacles to avoid modifying the original data
   private localObstacles: Obstacle[] = [];
   
+  // Notification subscription destroyed
   private destroy$ = new Subject<void>();
 
   constructor(

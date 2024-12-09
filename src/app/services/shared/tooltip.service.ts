@@ -61,14 +61,31 @@ export class TooltipService {
   tooltip$ = this.tooltipSubject.asObservable();
   isPinned$ = this.isPinnedSubject.asObservable();
 
+  tooltipRendered = false; // indicate if the tooltip is currently rendered
+  tooltipWidth = 150; // Default width
+  tooltipHeight = 36; // Default height
+  
   // Throttle flag to control frequency of showTooltip execution
   private isThrottling = false;
 
-  private tooltipHeight = 36; // Default height
-  private tooltipWidth = 150; // Default width
+  getTooltipRendered(): boolean {
+    return this.tooltipRendered;
+  }
+
+  getTooltipWidth(): number {
+    return this.tooltipWidth;
+  }
+  
+  getTooltipHeight(): number {
+    return this.tooltipHeight;
+  }
 
   setIsPinned(isPinned: boolean) {
     this.isPinnedSubject.next(isPinned);
+  }
+
+  setTooltipRendered(isRendered: boolean) {
+    this.tooltipRendered = isRendered;
   }
 
   setTooltipDimensions(width: number, height: number) {
@@ -111,6 +128,8 @@ export class TooltipService {
       targetBounds,
       container
     });
+    
+    this.setTooltipRendered(true);
   }
   
   // Hide the tooltip
@@ -175,11 +194,18 @@ export class TooltipService {
         TooltipDefaults.position
       );
 
-      this.tooltipSubject.next({
-        ...tooltipData,
-        style: updatedStyle
-      });
+      if (
+        updatedStyle.top !== tooltipData.style.top ||
+        updatedStyle.left !== tooltipData.style.left
+      ) {
+        this.tooltipSubject.next({
+          ...tooltipData,
+          style: updatedStyle,
+        });
+      }
     }
+
+    this.setTooltipRendered(false);
   }
 
   // Get the position and size of the target and container

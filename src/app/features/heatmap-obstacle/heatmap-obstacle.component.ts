@@ -62,7 +62,7 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
   private heatmapLayer: Konva.Layer;
   private hoverLayer: Konva.Layer;
   private hoverTarget: Konva.Node;
-  private destroy$ = new Subject<void>();
+  private destroy$ = new Subject<void>(); // Notification subscription destroyed
 
   constructor(
     private obstacleShapeManager: ObstacleShapeManager,
