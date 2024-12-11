@@ -45,7 +45,8 @@ export interface ShapeManager<T extends Konva.Shape, U extends BaseObstacle> {
   calculateBoundingBox(shape: T): { x: number; y: number; width: number; height: number }; // Get the bounding box of the shape
   addObstacleData(shape: T): void; // Add a new shape obstacle
   updateObstacleData(shape: T): void; // Update obstacle data from the shape
-  copyObstacleData(shape: T): Partial<U>; // Copy obstacle data for cloning
+  checkOverlap(obstacle: U): boolean; // Checks if the shape overlaps with existing obstacles
+  copyObstacleData(shape: T): U; // Copy obstacle data for cloning
   patchFormValue(shape: T): void; // Patch form values from the shape
   calculateOffsetPosition(
     values: Partial<U>,

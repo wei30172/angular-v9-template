@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
 import { ObstacleGenerationService } from 'src/app/services/obstacle/obstacle-generation.service';
+import { ObstacleCollisionService } from 'src/app/services/obstacle/obstacle-collision.service';
 import { ObstacleFormService } from 'src/app/services/obstacle//obstacle-form.service';
 import { ShapeManager } from './obstacle-shape-manager';
 import { ObstacleSettings } from 'src/app/config/obstacle-settings';
@@ -12,6 +13,7 @@ import { ObstacleType, TrapezoidObstacle } from 'src/app/models/obstacle.model';
 export class TrapezoidManagerService implements ShapeManager<Konva.Line, TrapezoidObstacle> {
   constructor(
     private obstacleGenerationService: ObstacleGenerationService,
+    private obstacleCollisionService: ObstacleCollisionService,
     private obstacleFormService: ObstacleFormService,
   ) {}
 
@@ -140,7 +142,7 @@ export class TrapezoidManagerService implements ShapeManager<Konva.Line, Trapezo
 
   addObstacleData(shape: Konva.Line): void {
     const obstacleData = this.copyObstacleData(shape);
-    this.obstacleGenerationService.addObstacle(obstacleData as TrapezoidObstacle);
+    this.obstacleGenerationService.addObstacle(obstacleData);
   }
 
   updateObstacleData(shape: Konva.Line): void {
@@ -162,7 +164,11 @@ export class TrapezoidManagerService implements ShapeManager<Konva.Line, Trapezo
     });
   }
 
-  copyObstacleData(shape: Konva.Line): Partial<TrapezoidObstacle> {
+  checkOverlap(obstacle: TrapezoidObstacle): boolean {
+    return this.obstacleCollisionService.checkOverlapAndBounds(obstacle);
+  }
+  
+  copyObstacleData(shape: Konva.Line): TrapezoidObstacle {
     const points = shape.points();
     return {
       id: shape.getAttr('id'),

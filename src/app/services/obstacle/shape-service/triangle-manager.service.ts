@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
 import { ObstacleGenerationService } from 'src/app/services/obstacle/obstacle-generation.service';
+import { ObstacleCollisionService } from 'src/app/services/obstacle/obstacle-collision.service';
 import { ObstacleFormService } from 'src/app/services/obstacle//obstacle-form.service';
 import { ShapeManager } from './obstacle-shape-manager';
 import { ObstacleSettings } from 'src/app/config/obstacle-settings';
@@ -12,6 +13,7 @@ import { ObstacleType, TriangleObstacle } from 'src/app/models/obstacle.model';
 export class TriangleManagerService implements ShapeManager<Konva.Line, TriangleObstacle> {
   constructor(
     private obstacleGenerationService: ObstacleGenerationService,
+    private obstacleCollisionService: ObstacleCollisionService,
     private obstacleFormService: ObstacleFormService,
   ) {}
 
@@ -129,7 +131,7 @@ export class TriangleManagerService implements ShapeManager<Konva.Line, Triangle
   
   addObstacleData(shape: Konva.Line): void {
     const obstacleData = this.copyObstacleData(shape);
-    this.obstacleGenerationService.addObstacle(obstacleData as TriangleObstacle);
+    this.obstacleGenerationService.addObstacle(obstacleData);
   }
   
   updateObstacleData(shape: Konva.Line): void {
@@ -149,7 +151,11 @@ export class TriangleManagerService implements ShapeManager<Konva.Line, Triangle
     });
   }
 
-  copyObstacleData(shape: Konva.Line): Partial<TriangleObstacle> {
+  checkOverlap(obstacle: TriangleObstacle): boolean {
+    return this.obstacleCollisionService.checkOverlapAndBounds(obstacle);
+  }
+
+  copyObstacleData(shape: Konva.Line): TriangleObstacle {
     const points = shape.points();
     return {
       id: shape.getAttr('id'),

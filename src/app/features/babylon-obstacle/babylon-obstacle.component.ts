@@ -28,18 +28,12 @@ window.earcut = earcut;
 export class BabylonObstacleComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   @Input() heatmapImageUrl: string | null = null;
   @Input() heatmapHeight: number | null = null;
-
-  // Dynamic ID for babylonCanvas
-  babylonCanvasId: string;
-
-  // Stores the obstacles' 3D representations
-  private obstaclesMeshes = new Map<string, BABYLON.Mesh>();
-
-  // Local copy of obstacles to avoid modifying the original data
-  private localObstacles: Obstacle[] = [];
   
-  // Notification subscription destroyed
-  private destroy$ = new Subject<void>();
+  babylonCanvasId: string; // Dynamic ID for the babylon canvas
+  
+  private obstaclesMeshes = new Map<string, BABYLON.Mesh>(); // Stores the obstacles' 3D representations
+  private localObstacles: Obstacle[] = []; // Local copy of obstacles to avoid modifying the original data
+  private destroy$ = new Subject<void>(); // Manages observable unsubscriptions
 
   constructor(
     private obstacleGenerationService: ObstacleGenerationService,

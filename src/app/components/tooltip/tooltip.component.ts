@@ -12,7 +12,9 @@ import { ThemeType, TooltipService } from 'src/app/services/shared/tooltip.servi
 })
 export class TooltipComponent implements OnInit {
   @ViewChild('tooltip', { static: false }) tooltipElement!: ElementRef<HTMLDivElement>;
-  private destroy$ = new Subject<void>(); // Notification subscription destroyed
+
+  isExpanded = false; //  Indicates whether the tooltip is expanded
+  private destroy$ = new Subject<void>(); // Manages observable unsubscriptions
   
   tooltip$: Observable<{
     title: string;
@@ -21,7 +23,6 @@ export class TooltipComponent implements OnInit {
     theme?: ThemeType;
   } | null>;
 
-  isExpanded = false;
 
   constructor(
     private tooltipService: TooltipService,

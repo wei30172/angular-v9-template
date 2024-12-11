@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
 import { ObstacleGenerationService } from 'src/app/services/obstacle/obstacle-generation.service';
+import { ObstacleCollisionService } from 'src/app/services/obstacle/obstacle-collision.service';
 import { ObstacleFormService } from 'src/app/services/obstacle//obstacle-form.service';
 import { ShapeManager } from './obstacle-shape-manager';
 import { ObstacleSettings } from 'src/app/config/obstacle-settings';
@@ -12,6 +13,7 @@ import { ObstacleType, RectangleObstacle } from 'src/app/models/obstacle.model';
 export class RectangleManagerService implements ShapeManager<Konva.Rect, RectangleObstacle> {
   constructor(
     private obstacleGenerationService: ObstacleGenerationService,
+    private obstacleCollisionService: ObstacleCollisionService,
     private obstacleFormService: ObstacleFormService,
   ) {}
 
@@ -24,7 +26,7 @@ export class RectangleManagerService implements ShapeManager<Konva.Rect, Rectang
       fill: config.color || '#000000',
       rotation: config.rotation || 0,
       draggable,
-      offsetX: (config.width || 100) / 2,
+      offsetX: (config.width || 100) / 2, 
       offsetY: (config.height || 100) / 2,
     });
 
@@ -111,7 +113,7 @@ export class RectangleManagerService implements ShapeManager<Konva.Rect, Rectang
   }
 
   addObstacleData(shape: Konva.Rect): void {
-    const obstacleData = this.copyObstacleData(shape) as RectangleObstacle;
+    const obstacleData = this.copyObstacleData(shape);
     this.obstacleGenerationService.addObstacle(obstacleData);
   }
 
@@ -129,7 +131,11 @@ export class RectangleManagerService implements ShapeManager<Konva.Rect, Rectang
     });
   }
 
-  copyObstacleData(shape: Konva.Rect): Partial<RectangleObstacle> {
+  checkOverlap(obstacle: RectangleObstacle): boolean {
+    return this.obstacleCollisionService.checkOverlapAndBounds(obstacle);
+  }
+
+  copyObstacleData(shape: Konva.Rect): RectangleObstacle {
     return {
       id: shape.getAttr('id'),
       x: shape.x(),

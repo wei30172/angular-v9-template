@@ -21,7 +21,7 @@ export class ObstacleGenerationService {
   private loadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.loadingSubject.asObservable();
 
-  constructor(private collisionService: ObstacleCollisionService) {}
+  constructor(private obstacleCollisionService: ObstacleCollisionService) {}
 
   // update loading state
   setLoadingState(isLoading: boolean): void {
@@ -167,19 +167,17 @@ export class ObstacleGenerationService {
 
         // If the maximum number of iterations is exceeded, force add the obstacle
         if (iterations > maxIterations) {
-          // console.log(
-          //   `Max iterations ${maxIterations} reached for obstacle. Adding obstacle ${obstacle.id} regardless of overlap.`
-          // );
+          // console.log(`Max iterations ${maxIterations} reached for obstacle. Adding obstacle ${obstacle.id} regardless of overlap.`);
           this.obstacleMap.set(obstacle.id, obstacle);
-          this.collisionService.addObstacleToGridMap(obstacle);
+          this.obstacleCollisionService.addObstacleToGridMap(obstacle);
           break;
         }
-      } while (this.collisionService.isOverlapping(obstacle)); // Retry if overlap is detected
+      } while (this.obstacleCollisionService.checkOverlapAndBounds(obstacle)); // Retry if overlap is detected
 
       // Add the obstacle if it does not overlap and within iteration limits
-      if (iterations <= maxIterations && !this.collisionService.isOverlapping(obstacle)) {
+      if (iterations <= maxIterations && !this.obstacleCollisionService.checkOverlapAndBounds(obstacle)) {
         this.obstacleMap.set(obstacle.id, obstacle);
-        this.collisionService.addObstacleToGridMap(obstacle);
+        this.obstacleCollisionService.addObstacleToGridMap(obstacle);
       }
     }
 
@@ -202,9 +200,6 @@ export class ObstacleGenerationService {
   addObstacle(obstacle: Obstacle): void {
     this.obstacleMap.set(obstacle.id, obstacle);
     this.updateObstaclesSubject();
-    // const adjustedObstacle = this.collisionService.adjustToBoundary(obstacle, this.getCurrentObstacles());
-    // this.obstacleMap.set(adjustedObstacle.id, adjustedObstacle);
-    // this.updateObstaclesSubject();
   }
 
   // Update an existing obstacle's properties
@@ -215,12 +210,6 @@ export class ObstacleGenerationService {
       this.obstacleMap.set(id, updatedObstacle);
       this.updateObstaclesSubject();
     }
-    // const obstacle = this.obstacleMap.get(id);
-    // if (obstacle) {
-    //   const updatedObstacle = this.collisionService.adjustToBoundary({ ...obstacle, ...updatedProps }, this.getCurrentObstacles());
-    //   this.obstacleMap.set(id, updatedObstacle);
-    //   this.updateObstaclesSubject();
-    // }
   }
 
   // Remove an obstacle by its ID

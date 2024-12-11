@@ -30,39 +30,35 @@ import { DropdownOption } from 'src/app/components/dropdown-selector/dropdown-se
   styleUrls: ['./heatmap-obstacle.component.scss']
 })
 export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestroy {
-  // Dynamic ID for konvaHeatmapCanvas
-  konvaHeatmapCanvasId: string;
-
-  // Dynamic ID for simpleHeatCanvas
-  simpleHeatCanvasId: string;
-
-  // Heatmap ID options
-  heatmapOptions: DropdownOption<string>[] = [
+  konvaHeatmapCanvasId: string; // Dynamic ID for the canvas that includes both obstacles and heatmap layers
+  simpleHeatCanvasId: string; // Dynamic ID for the simpleHeat heatmap canvas
+  
+  heatmapOptions: DropdownOption<string>[] = [ // Heatmap ID options
     { label: 'Heatmap 1', value: 'heatmap1' },
     { label: 'Heatmap 2', value: 'heatmap2' },
     { label: 'Heatmap 3', value: 'heatmap3' },
   ];
   currentHeatmapId: string = 'heatmap1';
-
-  // Heatmap height options
-  heatmapHeightOptions: DropdownOption<number>[] = [
+  
+  heatmapHeightOptions: DropdownOption<number>[] = [ // Heatmap height options
     { label: '10', value: 10 },
     { label: '30', value: 30 },
     { label: '50', value: 50 },
   ];
   heatmapHeight: number = 10;
   
-  heatmapImageUrl = null // Stores the current heatmap image URL
-  layers = []; // List of layers
-  isLayerListVisible = true;
-  is3DViewVisible = false;
-
-  private stage: Konva.Stage;
-  private obstacleLayer: Konva.Layer;
-  private heatmapLayer: Konva.Layer;
-  private hoverLayer: Konva.Layer;
-  private hoverTarget: Konva.Node;
-  private destroy$ = new Subject<void>(); // Notification subscription destroyed
+  
+  heatmapImageUrl = null; // Current heatmap image URL
+  layers = []; // Array of layer references
+  isLayerListVisible = true; // Indicates whether the layer list UI is visible
+  is3DViewVisible = false; // Indicates whether the 3D view is currently active
+  
+  private stage: Konva.Stage; // Konva stage for managing canvas elements
+  private obstacleLayer: Konva.Layer; // Layer for rendering obstacles
+  private heatmapLayer: Konva.Layer; // Layer for displaying the heatmap
+  private hoverLayer: Konva.Layer; // Layer for hover effects
+  private hoverTarget: Konva.Node; // The currently hovered node in the canvas
+  private destroy$ = new Subject<void>(); // Manages observable unsubscriptions
 
   constructor(
     private obstacleShapeManager: ObstacleShapeManager,
@@ -127,7 +123,13 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
 
   // Initialize canvas and layer
   private initializeCanvas() {
-    this.konvaCanvasService.initializeStage(this.konvaHeatmapCanvasId);
+    this.konvaCanvasService.initializeStage({
+      containerId: this.konvaHeatmapCanvasId,
+      layersConfig: {
+        heatmapLayer: true,
+        hoverLayer: true,
+      },
+    });
     this.stage = this.konvaCanvasService.getStage();
     this.obstacleLayer = this.konvaCanvasService.getObstacleLayer();
     this.heatmapLayer = this.konvaCanvasService.getHeatmapLayer();
@@ -398,10 +400,7 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     this.handleMouseLeave();
 
     // Reset obstacle's style
-    obstacle.setAttrs({
-      stroke: null,
-      strokeWidth: 0,
-    });
+    obstacle.stroke(null);
   }
 
   // Update Tooltip position and content

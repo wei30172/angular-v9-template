@@ -3,60 +3,103 @@ import Konva from 'konva';
 import { ObstacleSettings } from 'src/app/config/obstacle-settings';
 import { CanvasSettings } from 'src/app/config/canvas-settings';
 
+// Options for initializing the stage
+type StageInitializationOptions = {
+  containerId: string; // The ID of the container element for the stage
+  width?: number; // Optional width of the stage
+  height?: number; // Optional height of the stage
+  gridSize?: number; // Optional grid size for the stage
+  layersConfig?: { // Optional configuration for enabling or disabling specific layers
+    backgroundLayer?: boolean; // Enable background layer
+    obstacleLayer?: boolean; // Enable obstacle layer
+    heatmapLayer?: boolean; // Enable heatmap layer
+    gridLayer?: boolean; // Enable grid layer
+    hoverLayer?: boolean; // Enable hover layer
+    debugLayer?: boolean; // Enable debug laye
+  };
+};
+
 @Injectable({
   providedIn: 'root',
 })
 export class KonvaCanvasService {
   // Store the stage and layer instance
-  private stage: Konva.Stage | null = null;
-  private backgroundLayer: Konva.Layer | null = null;
-  private obstacleLayer: Konva.Layer | null = null;
-  private heatmapLayer: Konva.Layer | null = null;
-  private gridLayer: Konva.Layer | null = null;
-  private hoverLayer: Konva.Layer | null = null;
-  private transformer: Konva.Transformer | null = null;
+  private stage: Konva.Stage | null = null; // The main Konva stage, serving as the root container for layers
+  private backgroundLayer: Konva.Layer | null = null; // Layer for background images
+  private obstacleLayer: Konva.Layer | null = null; // Layer for obstacles drawn on the canvas
+  private heatmapLayer: Konva.Layer | null = null; // Layer for displaying heatmaps
+  private gridLayer: Konva.Layer | null = null; // Layer for displaying a grid
+  private hoverLayer: Konva.Layer | null = null; // Layer for hover effects
+  private debugLayer: Konva.Layer | null = null; // Layer for debugging purposes, e.g., visualizing SAT polygons
+  private transformer: Konva.Transformer | null = null; // Konva's transformer for resizing, rotating, and transforming shapes
 
-  // Initialize the stage with optional grid size, width, and height
-  initializeStage(
-    containerId: string,
-    width: number = CanvasSettings.DefaultWidth,
-    height: number = CanvasSettings.DefaultHeight,
-    gridSize: number = CanvasSettings.DefaultGridSize
-  ) {
+  // Initialize the stage with optional grid size, width, height, and dynamic layers
+  initializeStage(options: StageInitializationOptions) {
+    const {
+      containerId,
+      width = CanvasSettings.DefaultWidth,
+      height = CanvasSettings.DefaultHeight,
+      gridSize = CanvasSettings.DefaultGridSize,
+      layersConfig = {}, // Partial layers configuration
+    } = options;
+    
+    // Merge the provided layersConfig with default values
+    const finalLayersConfig = {
+      ...CanvasSettings.LayerControls,
+      ...layersConfig,
+    };
+
+    // Initialize the stage
     this.stage = new Konva.Stage({ container: containerId, width, height });
 
-    // Initialize layers
-    this.backgroundLayer = new Konva.Layer();
-    this.obstacleLayer = new Konva.Layer();
-    this.heatmapLayer = new Konva.Layer();
-    this.gridLayer = new Konva.Layer();
-    this.hoverLayer = new Konva.Layer();
+    // Initialize layers based on the final configuration
+    this.backgroundLayer = finalLayersConfig.backgroundLayer ? new Konva.Layer() : null;
+    this.obstacleLayer = finalLayersConfig.obstacleLayer ? new Konva.Layer() : null;
+    this.heatmapLayer = finalLayersConfig.heatmapLayer ? new Konva.Layer() : null;
+    this.gridLayer = finalLayersConfig.gridLayer ? new Konva.Layer() : null;
+    this.hoverLayer = finalLayersConfig.hoverLayer ? new Konva.Layer() : null;
+    this.debugLayer = finalLayersConfig.debugLayer ? new Konva.Layer() : null;
+
+    // Dynamically add initialized layers to the stage
+    const layers = {
+      backgroundLayer: this.backgroundLayer,
+      debugLayer: this.debugLayer,
+      gridLayer: this.gridLayer,
+      heatmapLayer: this.heatmapLayer,
+      obstacleLayer: this.obstacleLayer,
+      hoverLayer: this.hoverLayer,
+    };
+
+    // Dynamically define and add layers
+    const layerOrder = Object.keys(layers)
+      .map((key, index) => ({
+        layer: layers[key as keyof typeof layers], // Retrieve layer instance
+        order: index, // Assign order dynamically based on key sequence
+      }))
+      .filter(({ layer }) => layer !== null) // Skip null layers
+      .sort((a, b) => a.order - b.order); // Sort layers by order
 
     // Add layers to the stage
-    const layerOrder = new Map<Konva.Layer, number>([
-      [this.backgroundLayer, 0],
-      [this.gridLayer, 1],
-      [this.heatmapLayer, 2],
-      [this.obstacleLayer, 3],
-      [this.hoverLayer, 4],
-    ]);
+    layerOrder.forEach(({ layer }) => this.stage.add(layer as Konva.Layer));
 
-    Array.from(layerOrder.entries())
-      .sort((a, b) => a[1] - b[1])
-      .forEach(([layer]) => this.stage.add(layer));
 
-    // Initialize the transformer
-    this.transformer = new Konva.Transformer({
-      rotateEnabled: true,
-      resizeEnabled: true,
-      anchorSize: ObstacleSettings.Transformer.AnchorSize,
-      opacity: ObstacleSettings.Transformer.Opacity,
-    });
-    this.obstacleLayer.add(this.transformer);
+    // Initialize transformer if obstacleLayer is enabled
+    if (layers.obstacleLayer) {
+      this.transformer = new Konva.Transformer({
+        rotateEnabled: true,
+        resizeEnabled: true,
+        anchorSize: ObstacleSettings.Transformer.anchorSize,
+        opacity: ObstacleSettings.Transformer.opacity,
+      });
+      layers.obstacleLayer.add(this.transformer);
+    }
 
-    // Create grid
-    this.createGridLayer(gridSize);
+    // Create grid if gridLayer is enabled
+    if (layers.gridLayer) {
+      this.createGridLayer(gridSize);
+    }
 
+    // Render the final stage with all layers
     this.stage.batchDraw();
   }
 
@@ -89,6 +132,11 @@ export class KonvaCanvasService {
   getHoverLayer(): Konva.Layer | null {
     return this.hoverLayer;
   }
+
+  // Get the debug layer
+  getDebugLayer(): Konva.Layer | null {
+    return this.debugLayer;
+  }
   
   // Get the obstacle transformer
   getTransformer(): Konva.Transformer | null {
@@ -99,6 +147,12 @@ export class KonvaCanvasService {
   loadBackgroundImage(imageUrl: string, onLoadCallback?: () => void) {
     if (!this.stage) {
       console.warn('Stage is not initialized. Please initialize the stage first.');
+      return;
+    }
+
+    if (!this.backgroundLayer) {
+      console.warn('Background layer is not initialized.');
+      return;
     }
 
     const image = new Image();
@@ -127,6 +181,7 @@ export class KonvaCanvasService {
   ) {
     if (!this.gridLayer) {
       console.warn('Grid layer is not initialized.');
+      return;
     }
   
     const width = this.stage.width();
@@ -169,7 +224,11 @@ export class KonvaCanvasService {
 
   // Toggle grid visibility
   toggleGridLayer() {
-    this.toggleLayerVisibility(this.gridLayer!);
+    if (!this.gridLayer) {
+      console.warn('Grid layer is not initialized.');
+      return;
+    }
+    this.toggleLayerVisibility(this.gridLayer);
   }
   
   // Move the layer up in the layer stack
@@ -337,6 +396,7 @@ export class KonvaCanvasService {
   addHeatmapLayer(imageUrl: string) {
     if (!this.heatmapLayer) {
       console.warn('Heatmap layer is not initialized.');
+      return;
     }
 
     const heatmapImage = new Image();
@@ -370,13 +430,14 @@ export class KonvaCanvasService {
   ): Konva.Node {
     if (!this.hoverLayer) {
       console.warn('Hover layer is not initialized.');
+      return;
     }
 
     const {
-      radius = CanvasSettings.HoverTarget.DefaultRadius,
-      color = CanvasSettings.HoverTarget.DefaultColor,
-      lineWidth = CanvasSettings.HoverTarget.DefaultLineWidth,
-      visible = CanvasSettings.HoverTarget.DefaultVisibility,
+      radius = CanvasSettings.HoverTarget.defaultRadius,
+      color = CanvasSettings.HoverTarget.defaultColor,
+      lineWidth = CanvasSettings.HoverTarget.defaultLineWidth,
+      visible = CanvasSettings.HoverTarget.defaultVisibility,
     } = options || {};
 
     let hoverTarget: Konva.Group | Konva.Circle;

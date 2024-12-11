@@ -22,22 +22,21 @@ import { Obstacle, ObstacleType } from 'src/app/models/obstacle.model';
   styleUrls: ['./konva-obstacle.component.scss']
 })
 export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy {
-  // Dynamic ID for konvaObstacleCanvas
-  konvaObstacleCanvasId: string;
+  konvaObstacleCanvasId: string; // Dynamic ID for the Konva obstacle canvas
+  isFormVisible = false; // Indicates if the form UI is visible
+  isObstacleListVisible = false; // Indicates if the obstacle list UI is visible
+  currentType: ObstacleType = ObstacleType.Rectangle; // Current obstacle type selected for creation
+  currentObstacle: Konva.Shape | null = null; // Currently selected or active obstacle on the canvas
 
-  isFormVisible = false;
-  isObstacleListVisible = false; 
-  currentType: ObstacleType = ObstacleType.Rectangle;
-  currentObstacle: Konva.Shape | null = null;
-
-  private stage: Konva.Stage;
-  private obstacleLayer: Konva.Layer;
-  private transformer: Konva.Transformer;
-  private copiedObstacle: Partial<Obstacle> | null = null;
-  private startX: number | null = null;
-  private startY: number | null = null;
-  private destroy$ = new Subject<void>(); // Notification subscription destroyed
-  private canvasStateManager = new CanvasStateService();
+  private stage: Konva.Stage; // Konva stage for managing canvas elements
+  private obstacleLayer: Konva.Layer; // Layer for rendering obstacles
+  private transformer: Konva.Transformer; // Konva transformer for resizing and rotating obstacles
+  private copiedObstacle: Partial<Obstacle> | null = null; // Temporarily stores a copied obstacle for paste operations
+  private startX: number | null = null; // Starting X-coordinate for interactions like drag or draw
+  private startY: number | null = null; // Starting Y-coordinate for interactions like drag or draw
+  private canvasStateManager = new CanvasStateService(); // Service for managing canvas state transitions
+  private destroy$ = new Subject<void>(); // Manages observable unsubscriptions
+  private previousObstacles: Record<string, Obstacle> = {};
 
   constructor(
     private obstacleShapeManager: ObstacleShapeManager,
@@ -105,7 +104,10 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Initialize canvas and layer
   private initializeCanvas() {
-    this.konvaCanvasService.initializeStage(this.konvaObstacleCanvasId);
+    this.konvaCanvasService.initializeStage({
+      containerId: this.konvaObstacleCanvasId,
+      layersConfig: { debugLayer: false },
+    });
     this.stage = this.konvaCanvasService.getStage();
     this.obstacleLayer = this.konvaCanvasService.getObstacleLayer();
     this.transformer = this.konvaCanvasService.getTransformer();
@@ -150,11 +152,73 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
       .pipe(
         takeUntil(this.destroy$),
         debounceTime(100), // Debounce to avoid too frequent updates
-        distinctUntilChanged() // Ensure updates only when data changes
+        distinctUntilChanged() // Only triggered when the data structure changes
       )
       .subscribe(obstacles => {
-        this.renderObstacles(obstacles); // Render or update obstacles on the canvas
+        this.renderChangedObstacles(obstacles); // Render only changed obstacles
+        this.previousObstacles = this.mapObstaclesById(obstacles);
       });
+  }
+
+  // Compare obstacle data and update only changed obstacles
+  private renderChangedObstacles(obstacles: Obstacle[]) {
+    let requiresFullLayerRedraw = false;
+
+    obstacles.forEach(obstacleData => {
+      const previous = this.previousObstacles[obstacleData.id];
+      if (!previous || JSON.stringify(previous) !== JSON.stringify(obstacleData)) {
+        const shape = this.findShapeById(obstacleData.id);
+        if (shape) {
+          this.updateObstacleWithManager(shape, obstacleData);
+          shape.draw();
+        } else {
+          this.createObstacleWithManager(obstacleData);
+          requiresFullLayerRedraw = true;
+        }
+      }
+    });
+
+    if (requiresFullLayerRedraw) {
+      this.obstacleLayer.batchDraw();
+    }
+  }
+
+  // Convert obstacles to a map keyed by ID 
+  private mapObstaclesById(obstacles: Obstacle[]): Record<string, Obstacle> {
+    return obstacles.reduce((acc, obstacle) => {
+      acc[obstacle.id] = obstacle;
+      return acc;
+    }, {} as Record<string, Obstacle>);
+  }
+
+    // Create new obstacle using ManagerService
+  private createObstacleWithManager(obstacle: Obstacle) {
+    // Get the manager for the obstacle type
+    const manager = this.obstacleShapeManager.getShapeManagerByType(obstacle.shapeType);
+    if (!manager) return;
+
+    const newShape = manager.create(obstacle);
+
+    this.obstacleLayer.add(newShape);
+    this.addObstacleEventListeners(newShape, obstacle.id);
+  }
+
+  // Update existing obstacle using ManagerService
+  private updateObstacleWithManager(shape: Konva.Shape, obstacle: Obstacle) {
+    // Get the manager for the obstacle type
+    const manager = this.obstacleShapeManager.getShapeManagerByType(obstacle.shapeType);
+    if (!manager) return;
+
+    // Dynamically cast shape to the correct type
+    const castedShape = shape as ShapeMapping[typeof obstacle.shapeType]['shape'];
+    manager.update(castedShape, obstacle as ShapeMapping[typeof obstacle.shapeType]['config']);
+
+    // Update shape style based on overlap status
+    const isValid = manager.checkOverlap(obstacle);
+    shape.setAttrs({
+      stroke: isValid ? 'red' : 'lime',
+      strokeWidth: 1,
+    });
   }
 
   // Bind the canvas interaction events
@@ -266,7 +330,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
       // Scale the obstacle
       manager.scale(shape, factor, factor);
 
-       // Update the obstacle data
+      // Update the obstacle data
       manager.updateObstacleData(shape);
     });
   }
@@ -338,18 +402,18 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     this.copiedObstacle.y = newY;
   }
   
-  // Handles obstacle selection and updates its transform settings and canvas state
-  private selectAndUpdateObstacle(obstacle: Konva.Shape) {
-    // Enable dragging for the selected obstacle
-    obstacle.draggable(true);
+  // Handles obstacle shape selection and updates its transform settings and canvas state
+  private selectAndUpdateObstacle(shape: Konva.Shape) {
+    // Enable dragging for the selected obstacle shape
+    shape.draggable(true);
 
     // Set the selected obstacle in the transformer
-    this.transformer.nodes([obstacle]);
+    this.transformer.nodes([shape]);
     this.transformer.moveToTop();
-    obstacle.moveToTop();
+    shape.moveToTop();
 
     // Update the currentObstacle reference
-    this.currentObstacle = obstacle;
+    this.currentObstacle = shape;
 
     // Unsubscribe from previous transformer events
     this.transformer.off('transformstart');
@@ -410,10 +474,9 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
     this.startX = pointer.x;
     this.startY = pointer.y;
-    this.currentObstacle = null;
   }
   
-  // Update the size of the obstacle as the mouse moves
+  // Handle mouse move event for updating obstacle dimensions
   private handleMouseMove() {
     if (!this.canvasStateManager.isDrawing()) return;
 
@@ -423,32 +486,25 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     this.updateDrawing(pointer.x, pointer.y);
   }
 
-  // Adjust the obstacle dimensions during drawing
+  // Update the size of the obstacle during drawing
   private updateDrawing(pointerX: number, pointerY: number) {
     const distanceX = Math.abs(pointerX - this.startX!);
     const distanceY = Math.abs(pointerY - this.startY!);
 
     // Check if the mouse moved enough to start drawing a obstacle
-    if (
-      !this.currentObstacle &&
-      (
-        distanceX > ObstacleSettings.MinDrag || 
-        distanceY > ObstacleSettings.MinDrag
-      )
-    ) {
+    if (!this.currentObstacle && this.isDragDistanceSufficient(distanceX, distanceY)) {
       this.createNewObstacle();
     }
 
+    // Only resize if an obstacle is already created
     if (this.currentObstacle) {
-      // Get the current manager and shape
-      const result = this.obstacleShapeManager.getShapeAndManager(this.currentObstacle);
-      if (!result) return;
-
-      const { manager, shape } = result;
-      manager.resize(shape, distanceX, distanceY);
-
-      this.obstacleLayer.batchDraw();
+      this.resizeCurrentObstacle(distanceX, distanceY);
     }
+  }
+
+  // Check if the drag distance is sufficient
+  private isDragDistanceSufficient(distanceX: number, distanceY: number): boolean {
+    return distanceX > ObstacleSettings.MinDrag && distanceY > ObstacleSettings.MinDrag;
   }
 
   // Create a new obstacle
@@ -460,6 +516,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     // Generate unique ID for the new obstacle, e.g., obstacle-abc123xyz
     const id = `${this.currentType}-${Math.random().toString(36).substring(2, 9)}`;
 
+    // Generate a random color
     const randomColor = this.obstacleGenerationService.getRandomColor();
 
     const newShape = manager.create({
@@ -467,37 +524,52 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
       x: Math.floor(this.startX),
       y: Math.floor(this.startY),
       color: randomColor,
-    }, false); // Set draggable to false
+    }, false); // Not draggable initially
 
     this.obstacleLayer.add(newShape);
     this.currentObstacle = newShape;
   }
 
-  // Finalize drawing the obstacle on mouse up
-  private handleMouseUp() {
-    if (!this.canvasStateManager.isDrawing() || !this.currentObstacle) return;
-
-    this.canvasStateManager.setState(CanvasState.Idle);
-
+  // Resize the current obstacle
+  private resizeCurrentObstacle(distanceX: number, distanceY: number) {
     // Get the current manager and shape
     const result = this.obstacleShapeManager.getShapeAndManager(this.currentObstacle);
     if (!result) return;
-    
-    const { manager, shape } = result;
-    const shapeData = manager.calculateBoundingBox(shape);
 
-    // Check if the bounds are valid (non-zero width and height)
-    if (shapeData.width > 0 && shapeData.height > 0) {
-      this.finalizeNewObstacle(); // Finalize and save the new obstacle
+    const { manager, shape } = result;
+    manager.resize(shape, distanceX, distanceY);
+    this.obstacleLayer.batchDraw();
+  }
+
+  // Handle mouse up event to finalize the obstacle
+  private handleMouseUp() {
+    if (!this.canvasStateManager.isDrawing()) return;
+
+    this.canvasStateManager.setState(CanvasState.Idle);
+
+    const pointer = this.stage.getPointerPosition();
+    if (!pointer || !this.currentObstacle) return;
+
+    const distanceX = Math.abs(pointer.x - this.startX!);
+    const distanceY = Math.abs(pointer.y - this.startY!);
+
+    // Check if the bounds meet the minimum drag distance
+    if (!this.isDragDistanceSufficient(distanceX, distanceY)) {
+      this.cleanupIncompleteObstacle();
     } else {
-      shape.destroy(); // Remove invalid obstacles
+      this.finalizeNewObstacle();
     }
 
-    this.startX = null;
-    this.startY = null;
+    this.resetDrawingState();
   }
   
-  // Finalize a new obstacle as an obstacle
+  // Clean up incomplete obstacle
+  private cleanupIncompleteObstacle() {
+    this.currentObstacle.destroy();
+    this.currentObstacle = null;
+  }
+
+  // Finalize the new obstacle
   private finalizeNewObstacle() {
     // Get the current manager and shape
     const result = this.obstacleShapeManager.getShapeAndManager(this.currentObstacle);
@@ -510,6 +582,12 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     this.selectAndUpdateObstacle(shape);
   }
 
+  // Reset drawing-related state
+  private resetDrawingState() {
+    this.startX = null;
+    this.startY = null;
+  }
+
   // Handle zooming with the mouse wheel
   private handleMouseWheel(event: Konva.KonvaEventObject<WheelEvent>) {
     const wheelEvent = event.evt as WheelEvent;
@@ -518,50 +596,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     this.tooltipService.destroyTooltip();
   }
 
-  // Render or update obstacles on the canvas
-  private renderObstacles(obstaclesData: Obstacle[]) {
-    let requiresFullLayerRedraw = false;
-
-    obstaclesData.forEach(obstacleData => {
-      const obstacle = this.findObstacleById(obstacleData.id);
-      if (obstacle) {
-        this.updateObstacleWithManager(obstacle, obstacleData);
-        obstacle.draw();
-      } else {
-        this.createObstacleWithManager(obstacleData);
-        requiresFullLayerRedraw = true;
-      }
-    });
-    
-    if (requiresFullLayerRedraw) {
-      this.obstacleLayer.batchDraw();
-    }
-  }
-
-  // Create new obstacle using ManagerService
-  private createObstacleWithManager(obstacle: Obstacle) {
-    // Get the manager for the obstacle type
-    const manager = this.obstacleShapeManager.getShapeManagerByType(obstacle.shapeType);
-    if (!manager) return;
-
-    const newShape = manager.create(obstacle);
-
-    this.obstacleLayer.add(newShape);
-    this.addObstacleEventListeners(newShape, obstacle.id);
-  }
-
-  // Update existing obstacle using ManagerService
-  private updateObstacleWithManager(preObstacle: Konva.Shape, obstacle: Obstacle) {
-    // Get the manager for the obstacle type
-    const manager = this.obstacleShapeManager.getShapeManagerByType(obstacle.shapeType);
-    if (!manager) return;
-
-    // Dynamically cast preObstacle to the correct type
-    const castedShape = preObstacle as ShapeMapping[typeof obstacle.shapeType]['shape'];
-    manager.update(castedShape, obstacle as ShapeMapping[typeof obstacle.shapeType]['config']);
-  }
-
-  private findObstacleById<T extends Konva.Shape>(id: string): T | null {
+  private findShapeById<T extends Konva.Shape>(id: string): T | null {
     return this.obstacleLayer.findOne((node: Konva.Node) => {
       return node instanceof Konva.Shape && node.getAttr('id') === id;
     }) as T | null;
@@ -571,8 +606,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   private addObstacleEventListeners(obstacle: Konva.Shape, obstacleId: string) {
     this.konvaEventService.bindObjectEvents(obstacle, {
       'dragstart': () => this.handleObstacleDragStart(),
-      'dragmove': () => this.handleObstacleDraging(obstacle, obstacleId),
-      'dragend': () => this.handleObstacleDragEnd(obstacle),
+      'dragend': () => this.handleObstacleDragEnd(obstacle, obstacleId),
       'click': () => this.handleObstacleClick(obstacle),
       'transformend': () => this.handleObstacleTransform(obstacle),
       'mouseover': () => this.handleObstacleMouseOver(obstacle),
@@ -587,14 +621,11 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     this.canvasStateManager.setState(CanvasState.Dragging);
   }
 
-  // Update state and tooltip on drag end
-  private handleObstacleDraging(obstacle: Konva.Shape, obstacleId: string) {
+  // Update position when obstacle is dragged
+  private handleObstacleDragEnd(obstacle: Konva.Shape, obstacleId: string) {
     const { x, y } = obstacle.position();
     this.obstacleGenerationService.updateObstacle(obstacleId, { x, y });
-  }
 
-  // Update position when obstacle is dragged
-  private handleObstacleDragEnd(obstacle: Konva.Shape) {
     this.canvasStateManager.setState(CanvasState.Idle);
     this.showObstacleTooltip(obstacle);
     this.selectAndUpdateObstacle(obstacle);
@@ -641,10 +672,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Mouse leaves a obstacle, hiding the tooltip
   private handleObstacleMouseOut(obstacle: Konva.Shape) {
     // Reset obstacle's style
-    obstacle.setAttrs({
-      stroke: null,
-      strokeWidth: 0,
-    });
+    obstacle.stroke(null);
   }
 
   // Update Tooltip position and content
@@ -762,13 +790,13 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Select an obstacle from the list and set it as active on the canvas
   selectObstacle(obstacleId: string) {
-    const selectedOstacle = this.findObstacleById(obstacleId);
+    const selectedShape = this.findShapeById(obstacleId);
 
-    if (selectedOstacle) {
+    if (selectedShape) {
       // Show notification for selection
       this.notificationService.open(`Selected obstacle with ID: ${obstacleId}`);
 
-      this.selectAndUpdateObstacle(selectedOstacle);
+      this.selectAndUpdateObstacle(selectedShape);
     } else {
       // Show error notification if obstacle not found
       this.notificationService.open(`Obstacle with ID: ${obstacleId} not found`);
@@ -780,23 +808,23 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
     const confirmDelete = window.confirm('Are you sure you want to delete this obstacle?');
     if (!confirmDelete) return;
     
-    const obstacle = this.findObstacleById(obstacleId);
+    const shape = this.findShapeById(obstacleId);
 
-    if (obstacle) {
+    if (shape) {
       // Show notification for deletion
       this.notificationService.open(`Deleted obstacle with ID: ${obstacleId}`);
 
-      this.removeObstacleFromCanvasAndList(obstacle, obstacleId);
+      this.removeObstacleFromCanvasAndList(shape, obstacleId);
     } else {
       // Show error notification if obstacle not found
       this.notificationService.open(`Obstacle with ID: ${obstacleId} not found`);
     }
   }
 
-  // Remove the obstacle from the canvas and obstacle map
-  private removeObstacleFromCanvasAndList(obstacle: Konva.Shape, obstacleId: string) {
+  // Remove the obstacle shape from the canvas and obstacle map
+  private removeObstacleFromCanvasAndList(shape: Konva.Shape, obstacleId: string) {
     // Remove the obstacle from the canvas
-    obstacle.destroy();
+    shape.destroy();
     this.deselectObstacle()
     this.obstacleGenerationService.removeObstacle(obstacleId);
   }
