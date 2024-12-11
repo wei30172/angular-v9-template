@@ -152,7 +152,6 @@ export class ObstacleCollisionService {
     // Return as invalid if shape generation fails
     if (!satShape) {
       console.warn(`Failed to create SAT shape for obstacle: ${newObstacle.id}`);
-      console.log("failed to create");
       return true; // Treat as invalid placement
     }
 
@@ -176,13 +175,12 @@ export class ObstacleCollisionService {
       if (this.debugLayer && this.satShapeLine) {
         this.satShapeLine.setAttrs({ stroke: 'yellow' });
       }
-      console.log("out of bounds");
       return true; // Invalid placement
     }
 
     // Calculate grid range for the rotated bounding box
     const { startCol, endCol, startRow, endRow } = this.calculateGridRange(x, y, width, height);
-    
+
     for (let col = startCol; col <= endCol; col++) {
       for (let row = startRow; row <= endRow; row++) {
         const key = `${col}-${row}`;
@@ -194,7 +192,6 @@ export class ObstacleCollisionService {
          // Use SAT to check overlap with each obstacle in the same grid cell
         for (const obstacle of gridObstacles) {
           if (newObstacle.id !== obstacle.id && this.satOverlapCheck(newObstacle, obstacle)) {
-            console.log("collision detected");
             return true; // Collision detected
           }
         }
