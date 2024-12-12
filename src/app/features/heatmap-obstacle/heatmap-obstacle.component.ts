@@ -297,7 +297,6 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     this.hoverTarget.setAttrs({
       x: gridX,
       y: gridY,
-      radius,
       visible: true,
     });
 
