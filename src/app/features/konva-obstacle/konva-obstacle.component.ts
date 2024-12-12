@@ -450,7 +450,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
       return;
     }
     
-    if (event.target.id() && event.target.id().includes('obstacle')) {
+    if (event.target.id()) {
       this.canvasStateManager.setState(CanvasState.Dragging);
       return;
     }
