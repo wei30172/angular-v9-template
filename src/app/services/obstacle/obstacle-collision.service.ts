@@ -20,8 +20,12 @@ export class ObstacleCollisionService {
   private debugLayer: Konva.Layer | null = null; // Layer used for drawing collision outlines
   private satShapeLine: Konva.Line | null = null; // A line object representing the drawn SAT polygon
   private gridObstaclesMap: Map<string, Obstacle[]> = new Map(); // A map that stores obstacles indexed by grid cell keys
+  private readonly gridSize: number; // The size of each grid cell used for spatial partitioning
   
-  constructor(private konvaCanvasService: KonvaCanvasService) {}
+  constructor(private konvaCanvasService: KonvaCanvasService) {
+    // Initialize gridSize: Calculate grid size to accommodate the largest rotated obstacle
+    this.gridSize = Math.ceil(ObstacleSettings.MaxObstacleSize * Math.sqrt(2));
+  }
 
   // Define a map of SAT shape generators based on obstacle type
   private satShapeGenerators: { 
@@ -263,12 +267,11 @@ export class ObstacleCollisionService {
   ): {
     startCol: number; endCol: number; startRow: number; endRow: number
   } {
-    const gridSize = ObstacleSettings.MaxObstacleSize;
     return {
-      startCol: Math.floor(x / gridSize),
-      endCol: Math.floor((x + width) / gridSize),
-      startRow: Math.floor(y / gridSize),
-      endRow: Math.floor((y + height) / gridSize),
+      startCol: Math.floor(x / this.gridSize),
+      endCol: Math.floor((x + width) / this.gridSize),
+      startRow: Math.floor(y / this.gridSize),
+      endRow: Math.floor((y + height) / this.gridSize),
     };
   }
 
