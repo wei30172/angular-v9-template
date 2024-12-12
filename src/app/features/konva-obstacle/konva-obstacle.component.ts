@@ -467,7 +467,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Start drawing a new obstacle
   private initiateDrawing() {
-    const pointer = this.stage.getPointerPosition();
+    const pointer = this.stage.getRelativePointerPosition();
     if (!pointer) return;
 
     this.canvasStateManager.setState(CanvasState.Drawing);
@@ -480,7 +480,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   private handleMouseMove() {
     if (!this.canvasStateManager.isDrawing()) return;
 
-    const pointer = this.stage.getPointerPosition();
+    const pointer = this.stage.getRelativePointerPosition();
     if (!pointer) return;
 
     this.updateDrawing(pointer.x, pointer.y);
@@ -547,7 +547,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
 
     this.canvasStateManager.setState(CanvasState.Idle);
 
-    const pointer = this.stage.getPointerPosition();
+    const pointer = this.stage.getRelativePointerPosition();
     if (!pointer || !this.currentObstacle) return;
 
     const distanceX = Math.abs(pointer.x - this.startX!);
