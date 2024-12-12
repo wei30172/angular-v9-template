@@ -6,8 +6,6 @@ const TooltipDefaults = {
   position: 'bottom' as PositionType,
   theme: 'dark' as ThemeType,
   throttleDelay: 50,
-  scale: 1,
-  pan: 0
 };
 
 export interface TargetBounds {
@@ -50,7 +48,9 @@ export class TooltipService {
     title: string;
     description?: string | Array<string | Record<string, unknown>> | Record<string, unknown>;
     style: { top: string; left: string };
-    theme?: ThemeType;
+    theme: ThemeType;
+    offset: number;
+    position: PositionType;
     targetBounds: TargetBounds;
     container: HTMLElement | HTMLCanvasElement;
   } | null>(null);
@@ -125,6 +125,8 @@ export class TooltipService {
       description,
       style: tooltipPosition,
       theme,
+      offset,
+      position,
       targetBounds,
       container
     });
@@ -190,8 +192,8 @@ export class TooltipService {
       const updatedStyle = this.calculatePosition(
         tooltipData.targetBounds,
         tooltipData.container,
-        TooltipDefaults.offset,
-        TooltipDefaults.position
+        tooltipData.offset,
+        tooltipData.position
       );
 
       if (
