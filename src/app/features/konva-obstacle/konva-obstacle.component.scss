@@ -1,17 +1,15 @@
 .controls-container {
-  width: 960px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 6px;
   margin-bottom: 10px;
 
-  .toggle-list-btn {
-    width: 200px;
+  .toggle-list-btn, .toggle-preview-btn {
+    width: 150px;
     height: 36px;
     margin: 0 5px;
     padding: 0 10px;
-    font-size: 16px;
+    font-size: 14px;
     border: none;
     background-color: #007bff;
     color: white;
@@ -29,6 +27,7 @@
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
+  gap: 6px;
   
   .konvaObstacleCanvas {
     border: 1px solid black;

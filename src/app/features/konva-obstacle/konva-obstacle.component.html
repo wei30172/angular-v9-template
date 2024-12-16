@@ -22,6 +22,11 @@
     (click)="toggleObstacleList()" class="toggle-list-btn">
     {{ isObstacleListVisible ? 'Hide' : 'Show' }} Obstacle List
   </button>
+
+  <!-- Toggle Button for 3D View -->
+  <button (click)="toggle3DView()" class="toggle-preview-btn">
+    {{ is3DViewVisible ? 'Hide' : 'Show' }} 3D View
+  </button>
 </div>
 
 <div class="canvas-container">
@@ -42,6 +47,10 @@
     (selectObstacle)="selectObstacle($event)"
     (deleteObstacle)="deleteObstacle($event)">
   </app-obstacle-list>
+
+  <app-babylon-obstacle
+    *ngIf="is3DViewVisible"
+  ></app-babylon-obstacle>
 </div>
 
 <!-- Popup Overlay Component -->

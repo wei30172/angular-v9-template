@@ -25,6 +25,7 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   konvaObstacleCanvasId: string; // Dynamic ID for the Konva obstacle canvas
   isFormVisible = false; // Indicates if the form UI is visible
   isObstacleListVisible = false; // Indicates if the obstacle list UI is visible
+  is3DViewVisible = false; // Indicates whether the 3D view is currently active
   currentType: ObstacleType = ObstacleType.Rectangle; // Current obstacle type selected for creation
   currentObstacle: Konva.Shape | null = null; // Currently selected or active obstacle on the canvas
 
@@ -786,6 +787,17 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   // Toggle obstacle list visibility
   toggleObstacleList() {
     this.isObstacleListVisible = !this.isObstacleListVisible;
+    if (this.isObstacleListVisible) {
+      this.is3DViewVisible = false;
+    }
+  }
+
+  // Toggle 3D View visibility
+  toggle3DView() {
+    this.is3DViewVisible = !this.is3DViewVisible;
+    if (this.is3DViewVisible) {
+      this.isObstacleListVisible = false;
+    }
   }
 
   // Select an obstacle from the list and set it as active on the canvas
