@@ -1,5 +1,5 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged, debounceTime, withLatestFrom, filter, map } from 'rxjs/operators';
 import Konva from 'konva';
 
@@ -28,7 +28,8 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   is3DViewVisible = false; // Indicates whether the 3D view is currently active
   currentType: ObstacleType = ObstacleType.Rectangle; // Current obstacle type selected for creation
   currentObstacle: Konva.Shape | null = null; // Currently selected or active obstacle on the canvas
-
+  isObstacleLoading$: Observable<boolean>; // Indicates if obstacle data is loading
+  
   private stage: Konva.Stage; // Konva stage for managing canvas elements
   private obstacleLayer: Konva.Layer; // Layer for rendering obstacles
   private transformer: Konva.Transformer; // Konva transformer for resizing and rotating obstacles
@@ -63,6 +64,9 @@ export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy 
   ngOnInit() {
     // Generate a unique canvas ID with a random suffix, e.g., konvaObstacleCanvas-abc123xyz
     this.konvaObstacleCanvasId = `konvaObstacleCanvas-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Subscribes to the loading state from the obstacle generation service
+    this.isObstacleLoading$ = this.obstacleGenerationService.isLoading$;
   }
 
   ngAfterViewInit() {

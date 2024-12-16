@@ -6,7 +6,7 @@ import {
   HostListener,
   ChangeDetectorRef,
 } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged } from 'rxjs/operators';
 import Konva from 'konva';
 
@@ -52,6 +52,7 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
   layers = []; // Array of layer references
   isLayerListVisible = true; // Indicates whether the layer list UI is visible
   is3DViewVisible = false; // Indicates whether the 3D view is currently active
+  isObstacleLoading$: Observable<boolean>; // Indicates if obstacle data is loading
   
   private stage: Konva.Stage; // Konva stage for managing canvas elements
   private obstacleLayer: Konva.Layer; // Layer for rendering obstacles
@@ -76,6 +77,9 @@ export class HeatmapObstacleComponent implements OnInit, AfterViewInit, OnDestro
     // Generate a unique canvas ID with a random suffix, e.g., konvaHeatmapCanvas-abc123xyz
     this.konvaHeatmapCanvasId = `konvaHeatmapCanvas-${Math.random().toString(36).substring(2, 9)}`;
     this.simpleHeatCanvasId = `simpleHeatCanvas-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Subscribes to the loading state from the obstacle generation service
+    this.isObstacleLoading$ = this.obstacleGenerationService.isLoading$;
   }
 
   ngAfterViewInit() {

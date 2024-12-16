@@ -48,7 +48,12 @@
 </div>
 
 <div class="canvas-container">
-  <!-- Konva Canvas -->
+  <!-- Loading overlay -->
+  <div class="spinner-overlay" *ngIf="isObstacleLoading$ | async">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- Konva Obstacle Canvas -->
   <div
     [id]="konvaHeatmapCanvasId"
     class="konvaHeatmapCanvas">

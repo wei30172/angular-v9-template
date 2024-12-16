@@ -30,8 +30,12 @@
 </div>
 
 <div class="canvas-container">
+  <!-- Loading overlay -->
+  <div class="spinner-overlay" *ngIf="isObstacleLoading$ | async">
+    <div class="loading-spinner"></div>
+  </div>
 
-  <!-- Konva Canvas -->
+  <!-- Konva Obstacle Canvas -->
   <div
     [id]="konvaObstacleCanvasId"
     class="konvaObstacleCanvas"

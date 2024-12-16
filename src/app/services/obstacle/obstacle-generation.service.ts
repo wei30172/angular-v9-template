@@ -183,7 +183,11 @@ export class ObstacleGenerationService {
 
     // Update observable and stop loading
     this.updateObstaclesSubject();
-    this.setLoadingState(false);
+    
+    // Simulate API call: Set loading state to false after 1 second
+    setTimeout(() => {
+      this.setLoadingState(false);
+    }, 1000);
   }
 
   // Returns the current list of obstacles
