@@ -185,9 +185,9 @@ export class ObstacleGenerationService {
     this.updateObstaclesSubject();
     
     // Simulate API call: Set loading state to false after 1 second
-    setTimeout(() => {
+    // setTimeout(() => {
       this.setLoadingState(false);
-    }, 1000);
+    // }, 1000);
   }
 
   // Returns the current list of obstacles

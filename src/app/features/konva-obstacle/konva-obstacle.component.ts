@@ -24,7 +24,7 @@ import { Obstacle, ObstacleType } from 'src/app/models/obstacle.model';
 export class KonvaObstacleComponent implements OnInit, AfterViewInit, OnDestroy {
   konvaObstacleCanvasId: string; // Dynamic ID for the Konva obstacle canvas
   isFormVisible = false; // Indicates if the form UI is visible
-  isObstacleListVisible = false; // Indicates if the obstacle list UI is visible
+  isObstacleListVisible = true; // Indicates if the obstacle list UI is visible
   is3DViewVisible = false; // Indicates whether the 3D view is currently active
   currentType: ObstacleType = ObstacleType.Rectangle; // Current obstacle type selected for creation
   currentObstacle: Konva.Shape | null = null; // Currently selected or active obstacle on the canvas
